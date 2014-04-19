@@ -1,3 +1,5 @@
+# # C++
+
 # Compiled Object files
 *.slo
 *.lo
@@ -11,3 +13,8 @@
 *.lai
 *.la
 *.a
+
+# # Vim
+*.swp
+*.vim
+*.clang_complete
