@@ -2,6 +2,11 @@
 #define DISCRETECMP_H
 
 #include <vector>
+#include "TransitionKernel.h"
+
+typedef int state;
+typedef int action;
+typedef double probability;
 
 /*
  * Distinguish between MDP and CMP (Controlled Markov Process) to make multi
@@ -10,18 +15,13 @@
 class DiscreteCMP
 {
     public:
-        DiscreteCMP(int _states, int _actions);
-        double getTransitionProbability(const int s,
-                                        const int a,
-                                        const int s2) const;
-        void setTransitionProbability(const int s,
-                                      const int a,
-                                      const int s2,
-                                      const double p);
+        DiscreteCMP(TransitionKernel const *_kernel);
+        DiscreteCMP();
         const int states;
         const int actions;
+        TransitionKernel const * const kernel;
+        virtual ~DiscreteCMP();
     private:
-        std::vector<std::vector<std::vector<double>>> kernel;
 };
 
 #endif
