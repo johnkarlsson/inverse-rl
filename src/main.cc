@@ -9,6 +9,7 @@
 // #include "algorithm/ValueIteration.h"
 #include <cmath>
 #include <iterator>
+#include <vector>
 #include <cfloat>
 #include <limits>
 #include <chrono>
@@ -58,16 +59,8 @@ void test_tictactoetransitionkernel()
      cout << endl;
 }
 
-
-void test_tictactoecmp()
+void test_tictactoecmp_print(TicTacToeCMP& tttCmp)
 {
-    cout << "*** Testing TicTacToeCMP..." << endl;
-    TicTacToeTransitionKernel cmpKernel = TicTacToeTransitionKernel(3);
-    TicTacToeCMP tttCmp(&cmpKernel); //
-
-    tttCmp.move(1,1, 2);
-    tttCmp.move(1,2, 1);
-
     tttCmp.printState();
 
     vector<action> validActions =
@@ -75,7 +68,47 @@ void test_tictactoecmp()
     cout << "Valid actions: ";
     for (action a : validActions)
         cout << a << " ";
-     cout << endl;
+    cout << endl;
+
+    cout << "Features: ";
+    vector<double> w = tttCmp.features();
+
+    for (double wi : w)
+        cout << wi << " ";
+    cout << endl;
+}
+
+void test_tictactoecmp()
+{
+    cout << "*** Testing TicTacToeCMP..." << endl;
+    TicTacToeTransitionKernel cmpKernel = TicTacToeTransitionKernel(3);
+    TicTacToeCMP tttCmp(&cmpKernel); //
+
+    tttCmp.move(1,2, 1);
+    tttCmp.move(1,1, 2);
+
+    test_tictactoecmp_print(tttCmp);
+
+    tttCmp.move(0,1, 1);
+    tttCmp.move(0,2, 2);
+    tttCmp.move(0,0, 1);
+
+    test_tictactoecmp_print(tttCmp);
+
+    tttCmp.move(2,0, 1);
+    tttCmp.move(1,0, 2);
+    tttCmp.move(2,2, 1);
+
+    test_tictactoecmp_print(tttCmp);
+
+    TicTacToeCMP tttCmp2(&cmpKernel);
+
+    for (int i = 0; i < 2; ++i)
+        for (int j = 0; j < 3; ++j)
+            tttCmp2.move(i,j, 1);
+    tttCmp2.move(2,1, 2);
+
+    test_tictactoecmp_print(tttCmp2);
 }
 
 /*

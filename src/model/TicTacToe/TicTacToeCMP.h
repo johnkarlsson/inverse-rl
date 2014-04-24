@@ -23,17 +23,17 @@ class TicTacToeCMP : public DiscreteCMP
                 { return state; };
                 // setState(int)
                 // setState(std::vector<int>&)
-
+                const int size;
             protected:
                 int state;
                 std::vector<int> raw;
-
-            private:
-                const int size;
         };
 
         TicTacToeCMP(TicTacToeTransitionKernel const * kernel);
         State currentState;
+
+        std::vector<double> features(State& s);
+        std::vector<double> features() { return features(currentState); };
 
         void move(int i, int j, int value); // Matrix indexing
 
