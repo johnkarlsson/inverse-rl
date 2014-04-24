@@ -35,11 +35,23 @@ void TicTacToeCMP::move(int i, int j, int value)
 }
 
 // Counts the number of nlets (singlets, doublets, triplets)
-int nlets(TicTacToeCMP::State& s, int n, int player)
+int nlets(TicTacToeCMP::State& s, int n, int player, bool crosspoints = false)
 {
     int found = 0;
     bool diagsValid[2] = {true,true};
     int  diagsCount[2] = {0,0};
+
+    std::vector<int> crossCounts(s.size*s.size,0);
+
+    auto tagFound = [=, &crossCounts, &found, &s](int l, bool row) mutable
+    {
+        ++found;
+        for (int k = 0; k < s.size; ++k)
+            if (row)
+                crossCounts[k + l*s.size]++;
+            else // col
+                crossCounts[l + k*s.size]++;
+    };
 
     for (int i = 0; i < s.size; ++i)
     {
@@ -58,10 +70,10 @@ int nlets(TicTacToeCMP::State& s, int n, int player)
             else if (s.getPoint(j,i) != 0)
                 colValid = false;
         }
-        if (rowValid && rowCount >= n)
-            ++found;
-        if (colValid && colCount >= n)
-            ++found;
+        if (rowValid && rowCount == n)
+            tagFound(i, true); // ++found;
+        if (colValid && colCount == n)
+            tagFound(i, false); // ++found;
 
         // Diagonals
         for (int d = 0; d < 2; ++d)
@@ -76,25 +88,79 @@ int nlets(TicTacToeCMP::State& s, int n, int player)
     }
 
     for (int d = 0; d < 2; ++d)
-        if (diagsValid[d] && diagsCount[d] >= n)
+    {
+        if (diagsValid[d] && diagsCount[d] == n)
+        {
             ++found;
+            for (int i = 0; i < s.size; ++i)
+            {
+                int j = ( d ) * (s.size - i - 1) + (1 - d) * i;
+                crossCounts[j + i*s.size]++;
+            }
+        }
+    }
 
-    return found;
+    // for (int d = 0; d < 2; ++d)
+    //     if (diagsValid[d] && diagsCount[d] == n)
+    //         ++found;
+
+    if (!crosspoints)
+        return found;
+    else
+    {
+        int nCrosspoints = 0;
+        for (int i = 0; i < s.size; ++i)
+            for (int j = 0; j < s.size; ++j)
+                // only empty crosspoints count
+                if (s.getPoint(i,j) == 0 && crossCounts[j + i*s.size] >= 2)
+                    ++nCrosspoints;
+        return nCrosspoints;
+    }
 }
 
 std::vector<double> TicTacToeCMP::features(State& s)
 {
     const int nFeatures = 
-        2*size // number of nlets
-        + 1;   // something
+        2*size        // number of nlets
+        + 2           // crosspoints
+        + size*size   // raw data
+        + 2           // corners per player
+        + 1;          // center occupation
 
     std::vector<double> phi(nFeatures, 0);
 
     int i = 0;
-    // #(singlets, doublets, ..., nlets) for each player
     for (int player = 1; player <= 2; ++player)
+    {
+        // #(singlets, doublets, ..., nlets) for each player
         for (int nlet = 1; nlet <= size; ++nlet)
-            phi[i++] = nlets(currentState, nlet, player);
+            phi[i++] = nlets(s, nlet, player);
+        // crosspoints for each player
+        phi[i++] = nlets(s, 1, player, true);
+        // corners per player
+        int nCorners = 0;
+        const int coords[2] = {0, s.size - 1};
+        for (int a = 0; a < 2; ++a)
+            for (int b = 0; b < 2; ++b)
+                if (s.getPoint(coords[a], coords[b]) == player)
+                    ++nCorners;
+        phi[i++] = nCorners;
+    }
+
+    // raw board
+    for (int k = 0; k < size; ++k)
+        for (int l = 0; l < size; ++l)
+            phi[i++] = s.getPoint(k, l);
+
+    // center occupation
+    int c = (int)(s.size/2);
+    switch (s.getPoint(c,c))
+    {
+        case 0: phi[i++] = 0; break;
+        case 1: phi[i++] = 1; break;
+        case 2: phi[i++] =-1; break;
+    }
+
 
     return phi;
 }

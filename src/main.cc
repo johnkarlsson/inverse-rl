@@ -70,7 +70,7 @@ void test_tictactoecmp_print(TicTacToeCMP& tttCmp)
         cout << a << " ";
     cout << endl;
 
-    cout << "Features: ";
+    cout << "Features X(s,d,t,x,c) O(s,d,t,x,c) Raw(1,...9): ";
     vector<double> w = tttCmp.features();
 
     for (double wi : w)
@@ -109,6 +109,11 @@ void test_tictactoecmp()
     tttCmp2.move(2,1, 2);
 
     test_tictactoecmp_print(tttCmp2);
+
+    TicTacToeCMP tttCmp3(&cmpKernel);
+    tttCmp3.move(1,0, 1);
+    tttCmp3.move(0,2, 1);
+    test_tictactoecmp_print(tttCmp3);
 }
 
 /*
