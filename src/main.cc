@@ -70,7 +70,7 @@ void test_tictactoecmp_print(TicTacToeCMP& tttCmp)
         cout << a << " ";
     cout << endl;
 
-    cout << "Features X(s,d,t,x,c) O(s,d,t,x,c) Raw(1,...9): ";
+    cout << "Features X(s,d,t,x,c,f) O(s,d,t,x,c,f) Raw(1-9): ";
     vector<double> w = tttCmp.features();
 
     for (double wi : w)
@@ -101,19 +101,55 @@ void test_tictactoecmp()
 
     test_tictactoecmp_print(tttCmp);
 
-    TicTacToeCMP tttCmp2(&cmpKernel);
+    tttCmp.resetState();
+
+    test_tictactoecmp_print(tttCmp);
 
     for (int i = 0; i < 2; ++i)
         for (int j = 0; j < 3; ++j)
-            tttCmp2.move(i,j, 1);
-    tttCmp2.move(2,1, 2);
+            tttCmp.move(i,j, 1);
+    tttCmp.move(2,1, 2);
 
-    test_tictactoecmp_print(tttCmp2);
+    test_tictactoecmp_print(tttCmp);
 
-    TicTacToeCMP tttCmp3(&cmpKernel);
-    tttCmp3.move(1,0, 1);
-    tttCmp3.move(0,2, 1);
-    test_tictactoecmp_print(tttCmp3);
+    tttCmp.resetState();
+
+    tttCmp.move(1,0, 1);
+    tttCmp.move(0,2, 1);
+
+    test_tictactoecmp_print(tttCmp);
+
+    // Fork 1
+    tttCmp.resetState();
+    tttCmp.move(0,0, 1);
+    tttCmp.move(0,1, 1);
+    tttCmp.move(1,0, 1);
+    test_tictactoecmp_print(tttCmp);
+
+    // Fork 2
+    tttCmp.resetState();
+    tttCmp.move(0,0, 1);
+    tttCmp.move(0,2, 1);
+    tttCmp.move(2,0, 1);
+    test_tictactoecmp_print(tttCmp);
+
+    // Fork 3
+    tttCmp.resetState();
+    tttCmp.move(2,0, 1);
+    tttCmp.move(1,1, 1);
+    tttCmp.move(1,2, 1);
+    tttCmp.move(2,2, 1);
+    test_tictactoecmp_print(tttCmp);
+
+    // Fork 4
+    tttCmp.resetState();
+    tttCmp.move(2,0, 1);
+    tttCmp.move(1,1, 1);
+    tttCmp.move(1,2, 1);
+    tttCmp.move(2,2, 1);
+    tttCmp.move(0,2, 2);
+    test_tictactoecmp_print(tttCmp);
+
 }
 
 /*

@@ -34,6 +34,13 @@ void TicTacToeCMP::move(int i, int j, int value)
     currentState.raw[position] = value;
 }
 
+void TicTacToeCMP::resetState()
+{
+    currentState.state = 0;
+    for (int p = 0; p < size*size; ++p)
+        currentState.raw[p] = 0;
+}
+
 // Counts the number of nlets (singlets, doublets, triplets)
 int nlets(TicTacToeCMP::State& s, int n, int player, bool crosspoints = false)
 {
@@ -125,6 +132,7 @@ std::vector<double> TicTacToeCMP::features(State& s)
         + 2           // crosspoints
         + size*size   // raw data
         + 2           // corners per player
+        + 2           // forks per player
         + 1;          // center occupation
 
     std::vector<double> phi(nFeatures, 0);
@@ -145,6 +153,8 @@ std::vector<double> TicTacToeCMP::features(State& s)
                 if (s.getPoint(coords[a], coords[b]) == player)
                     ++nCorners;
         phi[i++] = nCorners;
+        // forks per player
+        phi[i++] = (nlets(s, 2, player, false) - nlets(s, 2, player, true)) / 2;
     }
 
     // raw board
@@ -160,7 +170,6 @@ std::vector<double> TicTacToeCMP::features(State& s)
         case 1: phi[i++] = 1; break;
         case 2: phi[i++] =-1; break;
     }
-
 
     return phi;
 }
