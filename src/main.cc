@@ -6,6 +6,7 @@
 #include "model/TicTacToe/TicTacToeTransitionKernel.h"
 #include "model/TransitionKernel.h"
 #include "model/TicTacToe/TicTacToeCMP.h"
+#include "model/TicTacToe/OptimalTTTPolicy.h"
 // #include "algorithm/ValueIteration.h"
 #include <cmath>
 #include <iterator>
@@ -63,11 +64,14 @@ void test_tictactoecmp_print(TicTacToeCMP& tttCmp)
 {
     tttCmp.printState();
 
+    OptimalTTTPolicy policy(&tttCmp);
+
     vector<action> validActions =
         tttCmp.kernel->getValidActions(tttCmp.currentState.getState());
     cout << "Valid actions: ";
     for (action a : validActions)
         cout << a << " ";
+    cout << " (" << policy.action(tttCmp.currentState) << " optimal)";
     cout << endl;
 
     cout << "Features X(s,d,t,x,c,f) O(s,d,t,x,c,f) Raw(1-9): ";
@@ -121,9 +125,9 @@ void test_tictactoecmp()
 
     // Fork 1
     tttCmp.resetState();
-    tttCmp.move(0,0, 1);
-    tttCmp.move(0,1, 1);
-    tttCmp.move(1,0, 1);
+    tttCmp.move(2,2, 1);
+    tttCmp.move(2,1, 1);
+    tttCmp.move(1,2, 1);
     test_tictactoecmp_print(tttCmp);
 
     // Fork 2

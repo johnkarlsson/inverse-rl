@@ -5,6 +5,7 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <sstream>
 
 using std::cout;
 using std::endl;
@@ -18,20 +19,37 @@ TicTacToeCMP::TicTacToeCMP(TicTacToeTransitionKernel const * tttKernel)
 
 void TicTacToeCMP::move(int i, int j, int value)
 {
+    currentState.move(i, j, value);
+}
+
+void TicTacToeCMP::State::move(int position, int value)
+{
+    int i = position / size;
+    int j = position - i * size;
+
+    move(i, j, value);
+}
+
+void TicTacToeCMP::State::move(int i, int j, int value)
+{
+
+    std::ostringstream os;
+    os << "(" << i << "," << j << ")";
+
     if (! ( value == 1 || value == 2) )
         throw std::invalid_argument(
-                "State.move() called with value \\notin {1,2}");
+            "State.move() called with value \\notin {1,2}");
     if (i < 0 || i > size || j < 0 || j > size)
         throw std::invalid_argument(
-                "State.move() called with invalid position.");
-    if (currentState.getPoint(i,j) != 0)
+            "State.move() called with invalid position " + os.str() + ".");
+    if (getPoint(i,j) != 0)
         throw std::invalid_argument(
-                "State.move() called with occupied position.");
+            "State.move() called with occupied position " + os.str() + ".");
 
     int position = j + size*i;
 
-    currentState.state += value * pow(3,position);
-    currentState.raw[position] = value;
+    state += value * pow(3,position);
+    raw[position] = value;
 }
 
 void TicTacToeCMP::resetState()
@@ -42,7 +60,7 @@ void TicTacToeCMP::resetState()
 }
 
 // Counts the number of nlets (singlets, doublets, triplets)
-int nlets(TicTacToeCMP::State& s, int n, int player, bool crosspoints = false)
+int nlets(const TicTacToeCMP::State& s, int n, int player, bool crosspoints = false)
 {
     int found = 0;
     bool diagsValid[2] = {true,true};
@@ -125,7 +143,7 @@ int nlets(TicTacToeCMP::State& s, int n, int player, bool crosspoints = false)
     }
 }
 
-std::vector<double> TicTacToeCMP::features(State& s)
+std::vector<double> TicTacToeCMP::features(const State& s) const
 {
     const int nFeatures = 
         2*size        // number of nlets
