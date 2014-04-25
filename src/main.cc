@@ -22,6 +22,7 @@ void test_discretecmp();
 void test_valueiteration();
 void test_tictactoecmp();
 void test_tictactoetransitionkernel();
+void play_optimalTTTpolicy();
 void compare_vi_qi(int cmp_size=10, double epsilon=0.001);
 
 int main(int argc, const char *argv[])
@@ -30,6 +31,7 @@ int main(int argc, const char *argv[])
     test_gridcmp();
     test_tictactoetransitionkernel();
     test_tictactoecmp();
+    play_optimalTTTpolicy();
     // test_valueiteration();
     // compare_vi_qi(30, 10);
     return 0;
@@ -71,7 +73,8 @@ void test_tictactoecmp_print(TicTacToeCMP& tttCmp)
     cout << "Valid actions: ";
     for (action a : validActions)
         cout << a << " ";
-    cout << " (" << policy.action(tttCmp.currentState) << " optimal)";
+    if (validActions.size() > 0)
+        cout << " (" << policy.action(tttCmp.currentState) << " optimal)";
     cout << endl;
 
     cout << "Features X(s,d,t,x,c,f) O(s,d,t,x,c,f) Raw(1-9): ";
@@ -87,6 +90,17 @@ void test_tictactoecmp()
     cout << "*** Testing TicTacToeCMP..." << endl;
     TicTacToeTransitionKernel cmpKernel = TicTacToeTransitionKernel(3);
     TicTacToeCMP tttCmp(&cmpKernel); //
+
+
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 2; ++j)
+            tttCmp.move(i,j, 1);
+    tttCmp.move(0,2, 2);
+    tttCmp.move(1,2, 2);
+    tttCmp.move(2,2, 2);
+    test_tictactoecmp_print(tttCmp);
+    tttCmp.resetState();
+
 
     tttCmp.move(1,2, 1);
     tttCmp.move(1,1, 2);
@@ -154,6 +168,50 @@ void test_tictactoecmp()
     tttCmp.move(0,2, 2);
     test_tictactoecmp_print(tttCmp);
 
+}
+
+void play_optimalTTTpolicy()
+{
+    TicTacToeTransitionKernel cmpKernel = TicTacToeTransitionKernel(3);
+    TicTacToeCMP tttCmp(&cmpKernel);
+    OptimalTTTPolicy policy(&tttCmp);
+
+    int moves = 0;
+    while (1)
+    {
+        auto checkWin = [&tttCmp, &moves]() mutable
+        {
+            auto features = tttCmp.features();
+            int win = 0;
+            if (features[TicTacToeCMP::FEATURE_TRIPLETS_X] > 0)
+                win = 1;
+            else if (features[TicTacToeCMP::FEATURE_TRIPLETS_O] > 0)
+                win = 2;
+
+            ++moves;
+            if (win || moves == 9)
+            {
+                if (win)
+                    cout << " *** PLAYER " << (win == 1 ? "X" : "O") << " WINS *** " << endl;
+                else
+                    cout << " *** TIE *** " << endl;
+                test_tictactoecmp_print(tttCmp);
+                tttCmp.resetState();
+                moves = 0;
+            }
+        };
+
+        tttCmp.move( policy.action(tttCmp.currentState) , 1);
+        checkWin();
+
+        test_tictactoecmp_print(tttCmp);
+
+        int i,j;
+        cin >> i >> j;
+
+        tttCmp.move(i-1, j-1, 2);
+        checkWin();
+    }
 }
 
 /*

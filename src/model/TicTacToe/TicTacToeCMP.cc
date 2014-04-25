@@ -17,6 +17,11 @@ TicTacToeCMP::TicTacToeCMP(TicTacToeTransitionKernel const * tttKernel)
       size(tttKernel->size)
 {}
 
+void TicTacToeCMP::move(int position, int value)
+{
+    currentState.move(position, value);
+}
+
 void TicTacToeCMP::move(int i, int j, int value)
 {
     currentState.move(i, j, value);
@@ -174,6 +179,7 @@ std::vector<double> TicTacToeCMP::features(const State& s) const
         // forks per player
         phi[i++] = (nlets(s, 2, player, false) - nlets(s, 2, player, true)) / 2;
     }
+
 
     // raw board
     for (int k = 0; k < size; ++k)
