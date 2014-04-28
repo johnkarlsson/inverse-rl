@@ -2,6 +2,7 @@
 #define TICTACTOETRANSITIONKERNEL_H
 
 #include "../TransitionKernel.h"
+#include <set>
 
 class TicTacToeTransitionKernel
     : public TransitionKernel
@@ -13,11 +14,11 @@ class TicTacToeTransitionKernel
                                         const int a,
                                         const int s2) const;
 
-        std::vector<int> getValidActions(const int s) const;
+        std::set<int> getValidActions(const int s) const;
 
-        std::vector< std::pair<state, probability> >
-            getTransitionProbabilities(const int s, const int a) const;
-    
+        // std::vector< std::pair<state, probability> >
+        //     getTransitionProbabilities(const int s, const int a) const;
+
         const int size;
 };
 

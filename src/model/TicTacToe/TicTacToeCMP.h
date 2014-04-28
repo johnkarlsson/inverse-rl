@@ -40,6 +40,8 @@ class TicTacToeCMP : public DiscreteCMP
         std::vector<double> features(const State& s) const;
         std::vector<double> features() const { return features(currentState); };
 
+        int winner();
+
         void move(int position, int value);
         void move(int i, int j, int value); // Matrix indexing
         void resetState();

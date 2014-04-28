@@ -1,10 +1,18 @@
 #include "TransitionKernel.h"
+#include <string>
+#include <stdexcept>
 
 TransitionKernel::TransitionKernel(int _states, int _actions)
     : states(_states), actions(_actions)
 {}
 
-std::vector<int> TransitionKernel::getValidActions(const int s) const
+std::set<int> TransitionKernel::getValidActions(const int s) const
 {
-    return std::vector<int>(0);
+    return std::set<int>();
+}
+
+std::vector< std::pair<state, probability> >
+    TransitionKernel::getTransitionProbabilities(const int s, const int a) const
+{
+    throw std::runtime_error("Undefined function TransitionKernel::getTransitionProbabilities");
 }

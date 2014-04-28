@@ -3,6 +3,7 @@
 
 #include "TransitionKernel.h"
 #include <vector>
+#include <set>
 
 class TabularTransitionKernel
     : public TransitionKernel
@@ -16,18 +17,18 @@ class TabularTransitionKernel
                                         const int a,
                                         const int s2) const;
 
-        // std::vector<int> getValidActions(const int s) const;
+        std::set<int> getValidActions(const int s) const;
 
-        // std::vector< std::pair<state, probability> >
-        //     getTransitionProbabilities(const int s, const int a) const;
+        std::vector< std::pair<state, probability> >
+            getTransitionProbabilities(const int s, const int a) const;
 
         void setTransitionProbability(const int s,
                                       const int a,
                                       const int s2,
                                       const double p);
-
     private:
         std::vector<std::vector<std::vector<double>>> kernel;
+        std::vector<std::set<int>> valid_actions;
 };
 
 #endif

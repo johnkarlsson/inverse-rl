@@ -2,6 +2,7 @@
 #include "TicTacToeTransitionKernel.h"
 
 #include <vector>
+#include <set>
 #include <cmath>
 
 int pointValue(int s, int p)
@@ -33,13 +34,13 @@ TicTacToeTransitionKernel::TicTacToeTransitionKernel(int _size)
       size(_size)
 {}
 
-std::vector<action> TicTacToeTransitionKernel::getValidActions(const state s) const
+std::set<action> TicTacToeTransitionKernel::getValidActions(const state s) const
 {
-    std::vector<action> output;
+    std::set<action> output;
 
     // Add actions for all non-occupied points
     for (action a = 0; a < actions; ++a)
         if (pointValue(s, a) == 0)
-            output.push_back(a);
+            output.insert(a);
     return output;
 }

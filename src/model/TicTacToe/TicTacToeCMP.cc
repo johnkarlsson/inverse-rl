@@ -35,6 +35,19 @@ void TicTacToeCMP::State::move(int position, int value)
     move(i, j, value);
 }
 
+int TicTacToeCMP::winner()
+{
+    auto features = this->features();
+    if (features[TicTacToeCMP::FEATURE_TRIPLETS_X] > 0)
+        return 1;
+    else if (features[TicTacToeCMP::FEATURE_TRIPLETS_O] > 0)
+        return 2;
+    else if (kernel->getValidActions(currentState.getState()).size() == 0)
+        return 3;
+    else
+        return 0;
+}
+
 void TicTacToeCMP::State::move(int i, int j, int value)
 {
 
@@ -153,7 +166,7 @@ std::vector<double> TicTacToeCMP::features(const State& s) const
     const int nFeatures = 
         2*size        // number of nlets
         + 2           // crosspoints
-        + size*size   // raw data
+        // + size*size   // raw data
         + 2           // corners per player
         + 2           // forks per player
         + 1;          // center occupation
@@ -182,9 +195,9 @@ std::vector<double> TicTacToeCMP::features(const State& s) const
 
 
     // raw board
-    for (int k = 0; k < size; ++k)
-        for (int l = 0; l < size; ++l)
-            phi[i++] = s.getPoint(k, l);
+    // for (int k = 0; k < size; ++k)
+    //     for (int l = 0; l < size; ++l)
+    //         phi[i++] = s.getPoint(k, l);
 
     // center occupation
     int c = (int)(s.size/2);

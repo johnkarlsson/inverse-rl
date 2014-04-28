@@ -2,18 +2,24 @@
 #include "TicTacToeCMP.h"
 
 #include <vector>
-#include <iostream>
+#include <set>
 
 OptimalTTTPolicy::OptimalTTTPolicy(TicTacToeCMP const * _cmp)
     : cmp(_cmp)
 {}
 
+// NOTE: Only supports player X
 int OptimalTTTPolicy::action(TicTacToeCMP::State s)
 {
-    std::vector<int> validActions = cmp->kernel->getValidActions(s.getState());
+    std::set<int> validActionsSet = cmp->kernel->getValidActions(s.getState());
+    std::vector<int> validActions(validActionsSet.size());
+    std::copy(validActionsSet.begin(), validActionsSet.end(),
+              std::back_inserter(validActions));
+
     if (validActions.size() == 0)
         throw std::invalid_argument(
             "OptimalTTTPolicy.action() called with full board.");
+
     std::vector< std::vector<double> > features(validActions.size());
     std::vector<double> baseFeatures = cmp->features(s);
 

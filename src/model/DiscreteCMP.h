@@ -21,6 +21,9 @@ class DiscreteCMP
         const int actions;
         TransitionKernel const * const kernel;
         virtual ~DiscreteCMP();
+        virtual std::vector<double> features(int s, int a) const;
+        virtual std::vector<double> features(int s) const;
+        virtual int nFeatures() const;
     private:
 };
 

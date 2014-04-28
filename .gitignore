@@ -16,5 +16,6 @@
 
 # # Vim
 *.swp
+*.swo
 *.vim
 *.clang_complete

@@ -8,11 +8,11 @@ class ValueIteration
 {
     public:
         ValueIteration(const DiscreteMDP * const mdp);
-        void computeStateActionValues(double epsilon = 0.001);
-        void init(double epsilon = 0.001);
-        void computeStateValues(double epsilon = 0.001);
+        void computeStateActionValues(double epsilon = 1e-6);
+        // void init(double epsilon = 0.001);
+        // void computeStateValues(double epsilon = 0.001);
         std::vector<std::vector<double>> Q;
-        std::vector<double> V;
+        // std::vector<double> V;
     private:
         const DiscreteMDP * const mdp;
 };

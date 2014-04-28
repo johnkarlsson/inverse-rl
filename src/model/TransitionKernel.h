@@ -2,6 +2,7 @@
 #define TRANSITIONKERNEL_H
 
 #include <vector>
+#include <set>
 
 typedef int state;
 typedef int action;
@@ -16,9 +17,9 @@ class TransitionKernel
                                                 const int a,
                                                 const int s2) const = 0;
 
-        virtual std::vector<int> getValidActions(const int s) const;
+        virtual std::set<int> getValidActions(const int s) const;
 
-        std::vector< std::pair<state, probability> >
+        virtual std::vector< std::pair<state, probability> >
             getTransitionProbabilities(const int s, const int a) const;
 
         const int states;
