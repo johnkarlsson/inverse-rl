@@ -39,6 +39,7 @@ void test_tictactoecmp_print(TicTacToeCMP& tttCmp);
 std::pair<double,double> optimal_vs_random();
 void compare_vi_qi(int cmp_size=10, double epsilon=0.001);
 void test_dirichletPolicyPosterior();
+vector<Demonstration> generateRandomMDPDemonstrations(RandomMDP& mdp);
 
 vector<double> wGlobal;
 
@@ -62,7 +63,17 @@ int main(int argc, const char *argv[])
 
 void test_dirichletPolicyPosterior()
 {
-    DirichletPolicyPosterior foo;
+    const double gamma = 0.5;
+    const int states = 6;
+    const int actions = 10;
+    RandomTransitionKernel kernel(states, actions);
+    RandomCMP cmp(&kernel);
+    RandomMDP mdp(&cmp, gamma);
+    auto demonstrations = generateRandomMDPDemonstrations(mdp);
+
+    SoftmaxDirichletPrior prior(actions);
+    DirichletPolicyPosterior foo(prior, demonstrations);
+
     // Policy& pi = foo.samplePolicy();
     cout << "A" << endl;
     Policy& pi1 = foo.samplePolicy();
@@ -81,10 +92,13 @@ void test_dirichletPolicyPosterior()
         cout << "B" << endl;
     }
 
-    vector<int>& r5 = foo.getStateActionCounts(5);
+    vector<int>& r5 = foo.getActionCounts(5);
     r5[5] = 555;
-    vector<int>& r2 = foo.getStateActionCounts(2);
+    vector<int>& r2 = foo.getActionCounts(2);
     r2[2] = 222;
+
+    vector<int>& r3 = foo.getActionCounts(2);
+
     cout << "r5:\t";
     for (int c : r5)
         cout << c << " ";
@@ -93,6 +107,29 @@ void test_dirichletPolicyPosterior()
     for (int c : r2)
         cout << c << " ";
     cout << endl;
+    cout << "r2 ?:\t";
+    for (int c : r2)
+        cout << c << " ";
+    cout << endl;
+
+    vector<int> tests = {2,5,0};
+    for (int test : tests)
+    {
+        for (int p = 0; p < 2; ++p)
+        {
+            Policy& pi = foo.samplePolicy();
+            vector<pair<int,double>> ssmn;
+            for (int i = 0; i < 2; ++i)
+            {
+                ssmn = pi.probabilities(test);
+                cout << "\ts" << test << "mn(" << i << ") policy " << p << "\t";
+                for (auto c : ssmn)
+                    cout << c.second << " ";
+                cout << endl;
+            }
+        }
+    }
+
 
     // foo.samplePolicy();
     // foo.samplePolicy();

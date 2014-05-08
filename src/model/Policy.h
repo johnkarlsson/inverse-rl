@@ -13,8 +13,7 @@ using std::vector;
 class Policy
 {
     public:
-        virtual std::vector<std::pair<int,double>> probabilities(int s) const
-            = 0;
+        virtual std::vector<std::pair<int,double>> probabilities(int s) = 0;
         virtual ~Policy()
         {
             std::cout << "~Policy()" << std::endl;
@@ -27,7 +26,7 @@ class ConstPolicy
     public:
         ConstPolicy(int _action, int states) : actions(states, _action) {}
         ConstPolicy(vector<int> _actions) : actions(_actions) {}
-        std::vector<std::pair<int,double>> probabilities(int s) const
+        std::vector<std::pair<int,double>> probabilities(int s)
         { return {{actions[s],1}}; }
     private:
         vector<int> actions;
@@ -56,7 +55,7 @@ class DeterministicPolicy
             std::copy(w.begin(), w.end(), weights.begin());
         }
 
-        std::vector<std::pair<int,double>> probabilities(int s) const
+        std::vector<std::pair<int,double>> probabilities(int s)
         {
             auto validActions = cmp->kernel->getValidActions(s);
             int aMax;
