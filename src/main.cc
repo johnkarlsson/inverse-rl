@@ -45,8 +45,8 @@ vector<double> wGlobal;
 
 int main(int argc, const char *argv[])
 {
-    test_dirichletPolicyPosterior();
-    return 0;
+    // test_dirichletPolicyPosterior();
+    // return 0;
     test_valueiteration();
     return 0;
     // test_discretecmp();

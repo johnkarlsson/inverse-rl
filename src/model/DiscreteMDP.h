@@ -9,8 +9,8 @@ class DiscreteMDP
     public:
         DiscreteMDP(const DiscreteCMP *cmp, double gamma);
 
-        double getReward(int s) const;
-        void setReward(int s, double r);
+        virtual double getReward(int s) const;
+        virtual void setReward(int s, double r);
 
         const DiscreteCMP * const cmp;
         const double gamma;
