@@ -35,22 +35,43 @@ void TicTacToeCMP::State::move(int position, int value)
     move(i, j, value);
 }
 
-int TicTacToeCMP::winner()
+int TicTacToeCMP::winner() const
 {
-    auto features = this->features();
+    return winner(currentState);
+}
+
+bool TicTacToeCMP::isTerminal(int s) const
+{
+    return (winner(TicTacToeCMP::State(size, s)) != 0);
+}
+
+// int TicTacToeCMP::winner()
+int TicTacToeCMP::winner(const State& state) const
+{
+    /*
+    auto features = this->features(state);
     if (features[TicTacToeCMP::FEATURE_TRIPLETS_X] > 0)
         return 1;
     else if (features[TicTacToeCMP::FEATURE_TRIPLETS_O] > 0)
         return 2;
-    else if (kernel->getValidActions(currentState.getState()).size() == 0)
+    else if (kernel->getValidActions(state.getState()).size() == 0)
         return 3;
     else
         return 0;
+    */
+    if (nlets(state, this->size, 1) > 0)
+        return 1;
+    else if (nlets(state, this->size, 2) > 0)
+        return 2;
+    else
+        for (int a = 0; a < size*size; ++a)
+            if (state.getPoint(a) == 0)
+                return 0; // Game on
+    return 3; // All tiles filled, tie.
 }
 
 void TicTacToeCMP::State::move(int i, int j, int value)
 {
-
     std::ostringstream os;
     os << "(" << i << "," << j << ")";
 
@@ -64,22 +85,86 @@ void TicTacToeCMP::State::move(int i, int j, int value)
         throw std::invalid_argument(
             "State.move() called with occupied position " + os.str() + ".");
 
+    state = TicTacToeTransitionKernel::successor(state, i, j, size, value);
+    /*
     int position = j + size*i;
 
     state += value * pow(3,position);
     raw[position] = value;
+    */
 }
 
 void TicTacToeCMP::resetState()
 {
     currentState.state = 0;
-    for (int p = 0; p < size*size; ++p)
-        currentState.raw[p] = 0;
+    // for (int p = 0; p < size*size; ++p)
+    //     currentState.raw[p] = 0;
 }
 
-// Counts the number of nlets (singlets, doublets, triplets)
-int nlets(const TicTacToeCMP::State& s, int n, int player, bool crosspoints = false)
+inline int successor(int state, int i, int j, int player)
 {
+    static const int size = 3;
+    return TicTacToeTransitionKernel::successor(state, i, j, size, player);
+}
+
+int triplets(int s, int player)
+{
+    static int nTriplets = 8;
+    static std::vector<std::vector<int>> tr(2, std::vector<int>(nTriplets, 0));
+    if (tr[0][0] == 0)
+    {
+        for (int p = 0; p <= 1; ++p)
+        {
+                int t = 0;
+                // Diag 1
+                tr[p][t] = successor(tr[p][t], 0, 0, p+1);
+                tr[p][t] = successor(tr[p][t], 1, 1, p+1);
+                tr[p][t] = successor(tr[p][t], 2, 2, p+1);
+                ++t;
+
+                // Diag 2
+                tr[p][t] = successor(tr[p][t], 0, 2, p+1);
+                tr[p][t] = successor(tr[p][t], 1, 1, p+1);
+                tr[p][t] = successor(tr[p][t], 2, 0, p+1);
+                ++t;
+
+                for (int c = 0; c < 3; ++c)
+                {
+                    for (int i = 0; i < 3; ++i)
+                        tr[p][t] = successor(tr[p][t], i, c, p+1);
+                    ++t;
+                }
+                for (int r = 0; r < 3; ++r)
+                {
+                    for (int i = 0; i < 3; ++i)
+                        tr[p][t] = successor(tr[p][t], r, i, p+1);
+                    ++t;
+                }
+        }
+        // for (int p = 0; p <= 1; ++p)
+        //     for (int t = 0; t < nTriplets; ++t)
+        //         TicTacToeCMP::printState(tr[p][t], 3);
+    }
+
+    int count = 0;
+    for (int triplet : tr[player-1])
+    {
+        if ((s & triplet) == triplet)
+            ++count;
+    }
+    return count;
+}
+
+
+// Counts the number of nlets (singlets, doublets, triplets)
+int globalCount = 0;
+int globalCount2 = 0;
+int nlets(const TicTacToeCMP::State& s, int n, int player, bool crosspoints)
+{
+    ++globalCount;
+    if (n == 3 && s.size == 3)
+        return triplets(s.getState(), player);
+    ++globalCount2;
     int found = 0;
     bool diagsValid[2] = {true,true};
     int  diagsCount[2] = {0,0};
@@ -161,17 +246,25 @@ int nlets(const TicTacToeCMP::State& s, int n, int player, bool crosspoints = fa
     }
 }
 
-std::vector<double> TicTacToeCMP::features(const State& s) const
+int TicTacToeCMP::nFeatures() const
 {
-    const int nFeatures = 
-        2*size        // number of nlets
+    return
+          2 * size    // number of nlets
         + 2           // crosspoints
-        // + size*size   // raw data
+     // + size*size   // raw data
         + 2           // corners per player
         + 2           // forks per player
         + 1;          // center occupation
 
-    std::vector<double> phi(nFeatures, 0);
+    // TODO: Add bias (1) feature ?
+}
+
+std::vector<double> TicTacToeCMP::features(const State& s) const
+{
+
+    const int _nFeatures = nFeatures();
+
+    std::vector<double> phi(_nFeatures, 0);
 
     int i = 0;
     for (int player = 1; player <= 2; ++player)
@@ -211,24 +304,34 @@ std::vector<double> TicTacToeCMP::features(const State& s) const
     return phi;
 }
 
+void TicTacToeCMP::printState(int s, int size)
+{
+    printState(TicTacToeCMP::State(size, s));
+}
+
 void TicTacToeCMP::printState()
 {
-    auto printChars = [this](char c)
+    TicTacToeCMP::printState(currentState);
+}
+
+void TicTacToeCMP::printState(TicTacToeCMP::State state)
+{
+    auto printChars = [&,state](char c)
     { 
         cout << "\t  " << c;
-        for (int s = 0; s < 2*size; ++s)
+        for (int s = 0; s < 2*state.size; ++s)
             cout << c;
         cout << endl;
     };
 
     printChars('_');
 
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < state.size; ++i)
     {
         cout << "\t | ";
-        for (int j = 0; j < size; ++j)
+        for (int j = 0; j < state.size; ++j)
         {
-            switch (currentState.getPoint(i,j))
+            switch (state.getPoint(i,j))
             {
                 case 0:  cout << "  "; break;
                 case 1:  cout << "X "; break;

@@ -8,11 +8,23 @@ OptimalTTTPolicy::OptimalTTTPolicy(TicTacToeCMP const * _cmp)
     : cmp(_cmp)
 {}
 
+std::vector<std::pair<int,double>> OptimalTTTPolicy::probabilities(int s)
+{
+    TicTacToeCMP::State state(cmp->size);
+    const int player = (cmp->kernel->getValidActions(s).size() % 2 == 0) ? 2 : 1;
+    if (player == 2)
+        state.setState(s, true); // Hack: Invert board since action() is for X
+    else
+        state.setState(s);
+
+    return {{action(state), 1}};
+}
+
 // NOTE: Only supports player X
-int OptimalTTTPolicy::action(TicTacToeCMP::State s)
+int OptimalTTTPolicy::action(TicTacToeCMP::State const & s)
 {
     std::set<int> validActionsSet = cmp->kernel->getValidActions(s.getState());
-    std::vector<int> validActions(validActionsSet.size());
+    std::vector<int> validActions;
     std::copy(validActionsSet.begin(), validActionsSet.end(),
               std::back_inserter(validActions));
 

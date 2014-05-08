@@ -4,7 +4,9 @@
 #include <vector>
 #include <numeric>
 #include <cfloat>
+#include <cmath>
 #include <iostream>
+#include <algorithm>
 #include <assert.h>
 #include "DiscreteCMP.h"
 
@@ -32,17 +34,26 @@ class ConstPolicy
         vector<int> actions;
 };
 
-class DeterministicPolicy
+class FeaturePolicy // Abstract
     : public Policy
 {
     public:
-        DeterministicPolicy(DiscreteCMP const * const _cmp,
+        FeaturePolicy(DiscreteCMP const * const _cmp,
                             vector<double> _weights)
             : cmp(_cmp), weights(_weights)
         {}
-        DeterministicPolicy(DiscreteCMP const * const _cmp)
+        FeaturePolicy(DiscreteCMP const * const _cmp)
             : cmp(_cmp), weights(_cmp->nFeatures(), 0)
         {}
+
+
+        double getValue(int s, int a)
+        {
+            auto phi = cmp->features(s,a);
+            double q = std::inner_product(phi.begin(), phi.end(),
+                                          weights.begin(), 0.0);
+            return q;
+        }
 
         const vector<double>& getWeights() const
         {
@@ -55,6 +66,24 @@ class DeterministicPolicy
             std::copy(w.begin(), w.end(), weights.begin());
         }
 
+    protected:
+        vector<double> weights;
+        DiscreteCMP const * const cmp;
+};
+
+// class SoftmaxPolicy
+class DeterministicPolicy
+    : public FeaturePolicy
+{
+    public:
+        DeterministicPolicy(DiscreteCMP const * const _cmp,
+                            vector<double> _weights)
+            : FeaturePolicy(_cmp, _weights)
+        {}
+        DeterministicPolicy(DiscreteCMP const * const _cmp)
+            : FeaturePolicy(_cmp, vector<double>(_cmp->nFeatures(), 0))
+        {}
+
         std::vector<std::pair<int,double>> probabilities(int s)
         {
             auto validActions = cmp->kernel->getValidActions(s);
@@ -62,9 +91,7 @@ class DeterministicPolicy
             double qMax = -DBL_MAX;
             for (int a : validActions)
             {
-                auto phi = cmp->features(s,a);
-                double q = std::inner_product(phi.begin(), phi.end(),
-                                              weights.begin(), 0.0);
+                double q = getValue(s,a);
                 if (q > qMax)
                 {
                     qMax = q;
@@ -73,10 +100,49 @@ class DeterministicPolicy
             }
             return {{aMax,1}};
         }
+};
 
+class SoftmaxPolicy
+    : public FeaturePolicy
+{
+    public:
+        SoftmaxPolicy(DiscreteCMP const * const _cmp,
+                            vector<double> _weights, double _temperature)
+            : FeaturePolicy(_cmp, _weights), c(_temperature)
+        {}
+        SoftmaxPolicy(DiscreteCMP const * const _cmp, double _temperature)
+            : FeaturePolicy(_cmp, vector<double>(_cmp->nFeatures(), 0)),
+              c(_temperature)
+        {}
+
+        std::vector<std::pair<int,double>> probabilities(int s)
+        {
+            std::set<int> validActions = cmp->kernel->getValidActions(s);
+            std::vector<std::pair<int,double>> output(validActions.size());
+
+            std::vector<double> qValues(validActions.size());
+            int i = 0;
+            for (int a : validActions)
+                qValues[i++] = getValue(s,a);
+            double qMax = *std::max_element(qValues.begin(), qValues.end());
+            for (int i = 0; i < qValues.size(); ++i)
+                qValues[i] -= qMax;
+            double sum = 0;
+            i = 0;
+            for (int a : validActions)
+            {
+                double q = qValues[i];
+                double e = exp(q / c);
+                output[i] = {a, e};
+                sum += e;
+                ++i;
+            }
+            for (int i = 0; i < output.size(); ++i)
+                output[i].second /= sum;
+            return output;
+        }
     private:
-        DiscreteCMP const * const cmp;
-        vector<double> weights;
+        const double c;
 };
 
 #endif

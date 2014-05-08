@@ -13,7 +13,8 @@ class RandomTransitionKernel
         void test_dirichlet();
         std::vector<double> sample_multinomial();
     private:
-        const double alpha = 0.25;
+        // const double alpha = 0.25;
+        const double alpha = 0.5;
         const std::vector<double> alphas;
         gsl_rng *r_global;
 };

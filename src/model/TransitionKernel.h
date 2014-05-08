@@ -17,10 +17,10 @@ class TransitionKernel
                                                 const int a,
                                                 const int s2) const = 0;
 
-        virtual std::set<int> getValidActions(const int s) const;
+        virtual std::set<int> getValidActions(const int s) const = 0;
 
         virtual std::vector< std::pair<state, probability> >
-            getTransitionProbabilities(const int s, const int a) const;
+            getTransitionProbabilities(const int s, const int a) const = 0;
 
         const int states;
         const int actions;

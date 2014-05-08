@@ -1,9 +1,11 @@
 #include "DiscreteMDP.h"
 
-DiscreteMDP::DiscreteMDP(const DiscreteCMP *_cmp, double _gamma)
+DiscreteMDP::DiscreteMDP(const DiscreteCMP *_cmp, double _gamma,
+                         bool initRewardVector)
     : cmp(_cmp), gamma(_gamma)
 {
-    rewards = std::vector<double>(cmp->states);
+    if (initRewardVector)
+        rewards = std::vector<double>(cmp->states);
 }
 
 double DiscreteMDP::getReward(int s) const

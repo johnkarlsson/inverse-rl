@@ -15,38 +15,120 @@ class TicTacToeCMP : public DiscreteCMP
         {
             friend class TicTacToeCMP;
             public:
+                State(int _size) : size(_size), state(0) {};
+                State(int _size, int _state) : size(_size), state(_state) {};
+            /*
                 State(int _size) : size(_size), state(0),
                                    raw(std::vector<int>(_size*_size,0)) {};
+                State(int _size, int s)
+                    : size(_size), state(0),
+                      raw(std::vector<int>(_size*_size,0))
+                {
+                    setState(s);
+                };
+            */
                 // State(State& s) : size(s.size), state(s.state), raw(s.raw) {};
+            /*
                 int getPoint(int i, int j) const // Matrix indexing
                 { return raw[j + i*size]; }
+                inline int getPoint(int a) const { return raw[a]; }
+            */
+                inline int getPoint(int i, int j) const // Matrix indexing
+                {
+                    return TicTacToeTransitionKernel::pointValue(state, i, j,
+                                                                 size);
+                }
+                inline int getPoint(int a) const
+                {
+                    return TicTacToeTransitionKernel::pointValue(state, a);
+                }
+
                 int getState() const
                 { return state; };
 
                 void move(int i, int j, int value);
-                void move(int position, int value);
+                /*
+                {
+                    state = TicTacToeTransitionKernel::successor(state, i, j,
+                                                                 size, value);
+                }
+                */
 
-                // setState(int)
+                void move(int position, int value);
+                /*
+                {
+                    state = TicTacToeTransitionKernel::successor(state,
+                                                                 position,
+                                                                 value);
+                }
+                */
+
+                void setState(int s, bool invert = false)
+                {
+                    state = s;
+                    if (invert)
+                    {
+                        int invertedState = 0;
+                        for (int p = 0; p < size*size; ++p)
+                        {
+                            int v = TicTacToeTransitionKernel::pointValue(s, p);
+                            if (v != 0)
+                            {
+                                int vi = (vi == 1) ? 2 : 1;
+                                invertedState = TicTacToeTransitionKernel
+                                            ::successor(invertedState, p, vi);
+                            }
+                        }
+                        state = invertedState;
+                    }
+                    /*
+                    int v;
+                    for (int a = raw.size()-1; a >= 0; --a)
+                    {
+                        v = 0;
+                        int av = pow(3,a);
+                        while (s >= av)
+                        {
+                            ++v;
+                            s -= av;
+                        }
+                        // At this point, pointValue(s,a) == v
+                        raw[a] = v;
+                        if (invert && v != 0)
+                            raw[a] = ((v == 1) ? 2 : 1);
+                    }
+                    */
+                }
                 // setState(std::vector<int>&)
                 const int size;
             protected:
                 int state;
-                std::vector<int> raw;
+                // std::vector<int> raw;
         };
 
         TicTacToeCMP(TicTacToeTransitionKernel const * kernel);
         State currentState;
 
         std::vector<double> features(const State& s) const;
-        std::vector<double> features() const { return features(currentState); };
+        // std::vector<double> features() const { return features(currentState); };
+        std::vector<double> features() const
+        { throw std::runtime_error("features() unsupported."); };
+        std::vector<double> features(int s) const
+        { return features(TicTacToeCMP::State(size, s)); };
 
-        int winner();
+        int nFeatures() const;
+
+        int winner(const State& state) const;
+        int winner() const;
+        bool isTerminal(int s) const;
 
         void move(int position, int value);
         void move(int i, int j, int value); // Matrix indexing
         void resetState();
 
         void printState();
+        static void printState(int s, int size);
+        static void printState(TicTacToeCMP::State state);
 
         /************ Feature indices ************/
         static const int    FEATURE_SINGLETS_X = 0;
@@ -66,10 +148,11 @@ class TicTacToeCMP : public DiscreteCMP
         static const int FEATURE_RAW           = 12;
         /******************************************/
 
-    private:
-        const int actions;
         const int size;
-
+        const int actions;
 };
+
+int nlets(const TicTacToeCMP::State& s, int n, int player,
+          bool crosspoints = false);
 
 #endif

@@ -5,6 +5,9 @@
 Transition::Transition(int _s, int _a, int _s2, double _r)
     : s(_s), a(_a), s2(_s2), r(_r)
 {}
+Transition::Transition(int _s, int _a)
+    : s(_s), a(_a)
+{}
 
 vector<double> LSTDQ::solve(int nFeatures, int nSamples,
                             vector<double>& phi, vector<double>& td,
@@ -77,6 +80,8 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
     const int k = mdp.cmp->nFeatures();
     const double gamma = mdp.gamma;
 
+    cout << "lstdq()" << endl;
+
     vector<double> phi(k*n);
     vector<double> td(n*k);
     vector<double> b(k);
@@ -87,38 +92,65 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
         for (int t = 0; t < demonstration.size(); ++t, ++i)
         {
             Transition T = demonstration[t];
-            // TODO: Makes sense?
-            bool terminal = (t == (demonstration.size() - 1));
+
+            // T.s is never terminal
+            // bool terminal = (t == (demonstration.size() - 1));
 
             vector<double> features = mdp.cmp->features(T.s, T.a);
             // vector<double> features = mdp.cmp->features(T.s2);
 
-            // Average phi(s2, pi(s2)) over policy probabilities.
-            // Note that features(s,a) is also an average but over transition
-            //  probabilities.
-            vector<double> featuresPi(k, 0);
-            auto actionProbabilities = pi.probabilities(T.s2);
-            for (pair<int,double> ap : actionProbabilities)
+            // Get transition probabilities to create averages instead of
+            // relying on data.
+            auto transitions = mdp.cmp->kernel->getTransitionProbabilities(T.s,
+                                                                           T.a);
+
+            /*
+             *  Average phi(s2, pi(s2)) and R(s2) over transition probabilities,
+             *  ("with a model"-version).
+             */
+            vector<double> featuresPi(k, 0); // Avg.
+            double reward = 0; // Avg.
+            for (auto tr : transitions)
             {
-                auto phi_a = mdp.cmp->features(T.s2, ap.first);
-                for (int j = 0; j < k; ++j)
-                    featuresPi[j] += ap.second * phi_a[j];
+                int s2 = tr.first;
+                double transitionProbability = tr.second;
+
+                // Average phi(s2, pi(s2)) over policy probabilities (regardless
+                // of LSTDQ version).
+                if (!mdp.cmp->isTerminal(s2)) // Otherwise featuresPi == 0
+                {
+                    auto actionProbabilities = pi.probabilities(s2);
+                    for (pair<int,double> ap : actionProbabilities)
+                    {
+                        double actionProbability = ap.second;
+                        // Note that features(s,a) is in itself an average but over
+                        // transition probabilities.
+                        auto phi_a = mdp.cmp->features(s2, ap.first);
+                        for (int j = 0; j < k; ++j)
+                            featuresPi[j] +=   transitionProbability
+                                             * actionProbability
+                                             * phi_a[j];
+                    }
+                }
+
+                reward += transitionProbability * mdp.getReward(s2);
             }
 
             for (int j = 0; j < k; ++j)
             {
                 // phi[i * k + j] = features[j];
                 phi[j * n + i] = features[j];// / (double) n;
-                if (terminal)
-                    td[i * k + j] = features[j];
-                else
+                // if (terminal)
+                //     td[i * k + j] = features[j];
+                // else
                     td[i * k + j] = (features[j] - gamma * featuresPi[j]);
-                if (T.r != 0)
-                    b[j] += T.r * features[j];// / (double) n;
+                if (reward != 0)
+                    b[j] += reward * features[j];// / (double) n;
             }
         }
     }
 
+    cout << "~lstdq()" << endl;
     return solve(k, n, phi, td, b);
 }
 

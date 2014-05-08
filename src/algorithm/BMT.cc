@@ -4,11 +4,45 @@
 #include <cfloat>
 #include <cmath>
 #include <numeric>
+#include <algorithm>
 
 #include "../model/DiscreteCMP.h"
 
 using std::vector;
 using std::inner_product;
+
+
+
+BMT::BMT( RandomMDP mdp, vector<Demonstration> D,
+          vector<vector<double>*> const & rewardFunctions,
+          vector<Policy*> const & policies)
+    : K(policies.size()), N(rewardFunctions.size())
+{
+    vector<int> states(D.size());
+    for (Demonstration demo : D)
+        for (Transition tr : demo)
+            states.push_back(tr.s); // TODO: Alot of repetition of states here. Make it std::set
+    policyRewardLoss = vector<vector<double>>(K, vector<double>(N, 0));
+    for (int j = 0; j < N; ++j)
+    {
+        mdp.setRewardWeights(*rewardFunctions[j]);
+        vector<double> weightsOpt = LSTDQ::lspi(D, mdp).getWeights();
+        for (int k = 0; k < K; ++k)
+        {
+            vector<double> weightsEval = LSTDQ::lstdq(D, *policies[k],
+                                                      mdp);
+
+            policyRewardLoss[k][j] = loss(weightsEval, weightsOpt,
+                                          states, *mdp.cmp);
+        }
+    }
+
+    for (auto v : policyRewardLoss)
+        for (auto loss : v)
+            sortedLosses.push_back(loss);
+    std::sort(sortedLosses.begin(), sortedLosses.end()); // Ascending
+}
+
 
 double BMT::loss(vector<double> const & wEval,
                  vector<double> const & wOpt,
@@ -16,6 +50,7 @@ double BMT::loss(vector<double> const & wEval,
 {
     double sup = -DBL_MAX;
     // TODO: Do this for all state action pairs in a demonstration instead?
+    // Probably not though
     for (int s : states)
     {
         vector<double> phi = cmp.features(s);
@@ -27,4 +62,39 @@ double BMT::loss(vector<double> const & wEval,
     }
 
     return sup;
+}
+
+double BMT::getLoss(int policy, int rewardFunction)
+{
+    return policyRewardLoss[policy][rewardFunction];
+}
+
+double beta(double ep_lower, double ep_upper)
+{
+    const static double c = 0.1;
+    return (exp(-c*ep_lower) - exp(-c*ep_upper));
+}
+
+double BMT::getRewardProbability(int rewardFunction) // Psi(B | ep, pi)
+{
+    const int j = rewardFunction;
+    double probabilitySum = 0.0;
+
+    for (int k = 0; k < K; ++k)
+        for (int i = 0; i < sortedLosses.size() - 1; ++i)
+        {
+            double ep_lower = sortedLosses[i];
+            double ep_upper = sortedLosses[i+1];
+            if (getLoss(k, j) < ep_lower)
+            {
+                int nEpOptimalRewardFunctions = 0;
+                for (int l = 0; l < N; ++l)
+                    if (getLoss(k,l) <= ep_lower)
+                        ++nEpOptimalRewardFunctions;
+                probabilitySum += beta(ep_lower, ep_upper)
+                                    / (double) nEpOptimalRewardFunctions;
+            }
+        }
+
+    return probabilitySum;
 }

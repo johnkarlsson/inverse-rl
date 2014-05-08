@@ -6,9 +6,10 @@ TransitionKernel::TransitionKernel(int _states, int _actions)
     : states(_states), actions(_actions)
 {}
 
+/*
 std::set<int> TransitionKernel::getValidActions(const int s) const
 {
-    return std::set<int>();
+    throw std::runtime_error("Undefined function TransitionKernel::getValidActions");
 }
 
 std::vector< std::pair<state, probability> >
@@ -16,3 +17,4 @@ std::vector< std::pair<state, probability> >
 {
     throw std::runtime_error("Undefined function TransitionKernel::getTransitionProbabilities");
 }
+*/

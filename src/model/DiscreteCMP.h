@@ -24,6 +24,7 @@ class DiscreteCMP
         virtual std::vector<double> features(int s, int a) const;
         virtual std::vector<double> features(int s) const;
         virtual int nFeatures() const;
+        virtual bool isTerminal(int s) const { return false; }
     private:
 };
 

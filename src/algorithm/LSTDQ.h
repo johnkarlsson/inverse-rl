@@ -18,8 +18,10 @@ class Transition
     public:
         Transition() {};
         Transition(int _s, int _a, int _s2, double _r);
-        int s, a, s2;
-        double r;
+        Transition(int _s, int _a);
+        int s, a;
+    private:
+        double r, s2; // TODO: Remove, get this from the MDP
 };
 
 typedef vector<Transition> Demonstration;
