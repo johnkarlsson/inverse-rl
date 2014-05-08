@@ -4,6 +4,7 @@
 #include <vector>
 #include <numeric>
 #include <cfloat>
+#include <iostream>
 #include <assert.h>
 #include "DiscreteCMP.h"
 
@@ -14,6 +15,10 @@ class Policy
     public:
         virtual std::vector<std::pair<int,double>> probabilities(int s) const
             = 0;
+        virtual ~Policy()
+        {
+            std::cout << "~Policy()" << std::endl;
+        };
 };
 
 class ConstPolicy 

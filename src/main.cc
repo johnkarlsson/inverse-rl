@@ -11,6 +11,7 @@
 #include "model/TicTacToe/RandomTTTPolicy.h"
 #include "model/random_mdp/RandomCMP.h"
 #include "model/random_mdp/RandomMDP.h"
+#include "model/DirichletPolicyPosterior.h"
 #include "datageneration/RandomTTTData.h"
 #include "algorithm/LSTDQ.h"
 #include "algorithm/BMT.h"
@@ -37,11 +38,14 @@ void test_randomPolicy();
 void test_tictactoecmp_print(TicTacToeCMP& tttCmp);
 std::pair<double,double> optimal_vs_random();
 void compare_vi_qi(int cmp_size=10, double epsilon=0.001);
+void test_dirichletPolicyPosterior();
 
 vector<double> wGlobal;
 
 int main(int argc, const char *argv[])
 {
+    test_dirichletPolicyPosterior();
+    return 0;
     test_valueiteration();
     return 0;
     // test_discretecmp();
@@ -54,6 +58,45 @@ int main(int argc, const char *argv[])
     play_optimalTTTpolicy();
     // compare_vi_qi(30, 10);
     return 0;
+}
+
+void test_dirichletPolicyPosterior()
+{
+    DirichletPolicyPosterior foo;
+    // Policy& pi = foo.samplePolicy();
+    cout << "A" << endl;
+    Policy& pi1 = foo.samplePolicy();
+    cout << "A" << endl;
+    Policy& pi2 = foo.samplePolicy();
+    cout << "A" << endl;
+    Policy& pi3 = foo.samplePolicy();
+    cout << "A" << endl;
+    Policy& pi4 = foo.samplePolicy();
+    cout << "A" << endl;
+    Policy& pi5 = foo.samplePolicy();
+    cout << "A" << endl;
+    for (int i = 0; i < 10; ++i)
+    {
+        Policy& pi5 = foo.samplePolicy();
+        cout << "B" << endl;
+    }
+
+    vector<int>& r5 = foo.getStateActionCounts(5);
+    r5[5] = 555;
+    vector<int>& r2 = foo.getStateActionCounts(2);
+    r2[2] = 222;
+    cout << "r5:\t";
+    for (int c : r5)
+        cout << c << " ";
+    cout << endl;
+    cout << "r2:\t";
+    for (int c : r2)
+        cout << c << " ";
+    cout << endl;
+
+    // foo.samplePolicy();
+    // foo.samplePolicy();
+    return;
 }
 
 void normalize(vector<double>& v)
