@@ -18,7 +18,7 @@ class Policy
         virtual std::vector<std::pair<int,double>> probabilities(int s) = 0;
         virtual ~Policy()
         {
-            std::cout << "~Policy()" << std::endl;
+            // std::cout << "~Policy()" << std::endl;
         };
 };
 

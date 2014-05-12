@@ -80,7 +80,7 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
     const int k = mdp.cmp->nFeatures();
     const double gamma = mdp.gamma;
 
-    cout << "lstdq()" << endl;
+    // cout << "lstdq()" << endl;
 
     vector<double> phi(k*n);
     vector<double> td(n*k);
@@ -150,7 +150,7 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
         }
     }
 
-    cout << "~lstdq()" << endl;
+    //cout << "~lstdq()" << endl;
     return solve(k, n, phi, td, b);
 }
 

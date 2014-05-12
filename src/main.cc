@@ -60,6 +60,11 @@ int main(int argc, const char *argv[])
 {
     if (true)
     {
+        test_valueiteration();
+        return 0;
+    }
+    if (true)
+    {
         test_generateTTT();
         return 0;
     }
@@ -90,8 +95,8 @@ int main(int argc, const char *argv[])
     return 0;
 }
 
-extern int globalCount;
-extern int globalCount2;
+// extern int globalCount;
+// extern int globalCount2;
 
 void test_generateTTT()
 {
@@ -103,7 +108,7 @@ void test_generateTTT()
     // vector<Policy*> policies = {&policyRandom, &policyOptimal};
     vector<Policy*> policies = { &policyRandom };
     vector<Demonstration> demonstrations
-        = generateDemonstrations(mdp, policies, -1, 2000, 0);
+        = generateDemonstrations(mdp, policies, -1, 10, 0);
 
     // vector<double> optWeights(cmp.nFeatures());
     auto optWeights = LSTDQ::lstdq(demonstrations, policyOptimal, mdp);
@@ -146,8 +151,8 @@ void test_generateTTT()
         cout << endl;
         cout << " =\t" << q << endl;
     }
-    cout << "Global count: " << globalCount << endl;
-    cout << "Global count2: " << globalCount2 << endl;
+    // cout << "Global count: " << globalCount << endl;
+    // cout << "Global count2: " << globalCount2 << endl;
 }
 
 //vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp, Policy& pi,
@@ -185,7 +190,7 @@ vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                 mdp.cmp->kernel->getTransitionProbabilities(currentState,
                                                             action);
             currentState = sample(transitionProbabilities);
-            if (false) // print
+            if (true) // print
             {
                 ((TicTacToeCMP*)mdp.cmp)->printState(
                     TicTacToeCMP::State(
@@ -200,6 +205,9 @@ vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
             }
             demonstrations[d].push_back(Transition(previousState, action));
         }
+        if (true) // print
+            cout << endl << "-------------------------------------------------"
+                 << endl;
     }
 
     cout << "Done!" << endl;
@@ -1098,6 +1106,23 @@ void test_valueiteration()
         cout << fixed << mdp.getReward(s) << " | \t";
     cout << endl;
 
+    // Print transition probs for each state and action
+    cout << "Transition probabilities from states given actions:" << endl;
+    for (int s = 0; s < states; ++s)
+    {
+        cout << "\tS" << s << ":" << endl;
+        for (int a = 0; a < actions; ++a)
+        {
+            cout << "\t\tA" << a << ":\t";
+            for (int s2 = 0; s2 < states; ++s2)
+            {
+                cout << kernel.getTransitionProbability(s, a, s2) << "\t";
+            }
+            cout << endl;
+        }
+    }
+
+    /*
     // Print max transition prob for each state and action
     for (int a = 0; a < actions; ++a)
     {
@@ -1121,6 +1146,7 @@ void test_valueiteration()
         }
         cout << endl;
     }
+    */
 
     vector<int> bestActions(states, 0);
     for (int s = 0; s < states; ++s)
@@ -1147,6 +1173,23 @@ void test_valueiteration()
     // test_lstdq_randomMDP(mdp, pi1);
     vector<double> w = test_lstdq_randomMDP(mdp, piOpt);
 
+    /*
+     * LSPI
+     */
+    auto demonstrations = generateRandomMDPDemonstrations(mdp);
+    DeterministicPolicy lspiPolicy = LSTDQ::lspi(demonstrations, mdp);
+    cout << "LSPI w* ( ";
+    for (int s = 0; s < mdp.cmp->states; ++s)
+    {
+        cout << lspiPolicy.probabilities(s)[0].first << " ";
+    }
+    cout << ") = ";
+    for (int i = 0; i < mdp.cmp->nFeatures(); ++i)
+        cout << lspiPolicy.getWeights()[i] << " ";
+    cout << endl;
+    /*
+     */
+
     cout << "~Q* - Q*" << endl;
     cout << "S\\A\t";
     for (int a = 0; a < actions; ++a)
@@ -1164,7 +1207,37 @@ void test_valueiteration()
         cout << endl;
     }
 
+    // Average reward for each state action pair?
+    for (int s = 0; s < states; ++s)
+    {
+        for (int a = 0; a < actions; ++a)
+        {
+            auto tp = cmp.kernel->getTransitionProbabilities(s, a);
+            double avgValue = 0;
+            double avgReward = 0;
+            for (auto tr : tp)
+            {
+                int s2 = tr.first;
+                double p = tr.second;
+                double v = -DBL_MAX;
+                for (int a2 = 0; a2 < actions; ++a2)
+                {
+                    double q = vi.Q[s2][a2];
+                    if (q > v)
+                        v = q;
+                }
+                avgValue +=  p * v;
+                avgReward += p * mdp.getReward(s2);
+            }
+            double approxAvgReward = vi.Q[s][a] - gamma * avgValue;
+            cout << "\tApproximate avg reward\t~<Q(" << s << "," << a << ")> =\t"
+                 << approxAvgReward << endl;
+            cout << "\tTrue avg reward\t\t <Q(s,a)> =\t" << avgReward << endl;
+        }
+    }
+
     // Mathematica output
+    /*
     bool first = true;
     cout << "{";
     for (int s = 0; s < states; ++s)
@@ -1186,6 +1259,7 @@ void test_valueiteration()
         }
     }
     cout << "}" << endl;
+    */
 
     vector<double> phi = cmp.features(2, 0);
     cout << "phi(s=2, a=0) = ";
@@ -1201,17 +1275,6 @@ void test_valueiteration()
     }
     cout << endl;
 
-    auto demonstrations = generateRandomMDPDemonstrations(mdp);
-    DeterministicPolicy lspiPolicy = LSTDQ::lspi(demonstrations, mdp);
-    cout << "LSPI w* ( ";
-    for (int s = 0; s < mdp.cmp->states; ++s)
-    {
-        cout << lspiPolicy.probabilities(s)[0].first << " ";
-    }
-    cout << ") = ";
-    for (int i = 0; i < mdp.cmp->nFeatures(); ++i)
-        cout << lspiPolicy.getWeights()[i] << " ";
-    cout << endl;
 
 
     ConstPolicy pi0(0, states);

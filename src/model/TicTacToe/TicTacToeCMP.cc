@@ -156,15 +156,42 @@ int triplets(int s, int player)
 }
 
 
+/**
+ * For 2000 demonstrations, one LSPI call renders ~80M invocations to this
+ * method. Fastest way around it is a lookup table, for which only 65 000
+ * invocations are needed (but inefficient space ~16 MB data).
+ *
+ * Demonstrations  Calls   Without lookup
+ *           4000  65 000
+ *           2000  65 000  80 000 000
+ *            500  64 000
+ *            100  51 000
+ *            100  42 000
+ */
+char nlets_memoized[2 << (9*2 + 4)]; // 16 MB
+int _nlets(const TicTacToeCMP::State& s, int n, int player, bool crosspoints);
 // Counts the number of nlets (singlets, doublets, triplets)
-int globalCount = 0;
-int globalCount2 = 0;
 int nlets(const TicTacToeCMP::State& s, int n, int player, bool crosspoints)
 {
-    ++globalCount;
-    if (n == 3 && s.size == 3)
-        return triplets(s.getState(), player);
-    ++globalCount2;
+    static const int ss = 2 * s.size * s.size;
+    int lookup = s.getState()
+                 + (n << ss)
+                 + (player << (ss+2))
+                 + (crosspoints << (ss+3));
+    int nLookup = nlets_memoized[lookup];
+    if (nLookup == 0) // domain is >= 0; store value + 1 to let 0 indicate miss
+    {
+        nLookup = 1 + _nlets(s, n, player, crosspoints);
+        nlets_memoized[lookup] = nLookup;
+    }
+    return (nLookup - 1);
+}
+
+int _nlets(const TicTacToeCMP::State& s, int n, int player, bool crosspoints)
+{
+    if (n == 3 && s.size == 3) // This optimiziation turned out rather useless.
+        return triplets(s.getState(), player); // But it's not worse...
+
     int found = 0;
     bool diagsValid[2] = {true,true};
     int  diagsCount[2] = {0,0};
