@@ -98,3 +98,31 @@ double BMT::getRewardProbability(int rewardFunction) // Psi(B | ep, pi)
 
     return probabilitySum;
 }
+
+// Ax = b, returns x for rectangular systems
+vector<double> solve_rect(vector<double> A, vector<double> b)
+{
+    int n = b.size();
+    int k = A.size() / n;
+
+    assert(A.size() == n*k);
+    assert(n > k && "Matrix A in rectangular system Ax=b must have more rows than columns");
+
+    gsl_matrix_view _A = gsl_matrix_view_array(A.data(), n, k);
+    gsl_vector_view _b = gsl_vector_view_array(b.data(), n);
+
+    gsl_vector *x = gsl_vector_alloc (k);
+    gsl_vector *tau = gsl_vector_alloc(k);
+    gsl_vector *gsl_residual = gsl_vector_alloc(n);
+
+    gsl_linalg_QR_decomp (&_A.matrix, tau);
+    gsl_linalg_QR_lssolve (&_A.matrix, tau, &_b.vector, x, gsl_residual);
+
+    vector<double> output(x->data, x->data + k);
+
+    gsl_vector_free (x);
+    gsl_vector_free (tau);
+    gsl_vector_free (gsl_residual);
+
+    return output;
+}

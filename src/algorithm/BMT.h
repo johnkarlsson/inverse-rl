@@ -23,6 +23,9 @@ class BMT
 
         double getRewardProbability(int rewardFunction);
 
+        // Linalg
+        static vector<double> solve_rect(vector<double> A, vector<double> b);
+
     private:
         const int K;
         const int N;
