@@ -18,10 +18,11 @@ class Transition
     public:
         Transition() {};
         Transition(int _s, int _a, int _s2, double _r);
-        Transition(int _s, int _a);
+        // Transition(int _s, int _a);
         int s, a;
+        double r, s2; // Not used in LSTDQ "with a model",
+                      // but useful for MC playouts.
     private:
-        double r, s2; // TODO: Remove, get this from the MDP
 };
 
 typedef vector<Transition> Demonstration;

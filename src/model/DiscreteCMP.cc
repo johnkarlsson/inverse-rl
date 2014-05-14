@@ -17,6 +17,7 @@ int DiscreteCMP::nFeatures() const
 {
     if (DEBUG_SAFEATURES)
         return states*actions;
+    return states;
     return states + 1;
 }
 
@@ -30,7 +31,7 @@ std::vector<double> DiscreteCMP::features(int s) const
 
     std::vector<double> output(nFeatures(), 0);
     output[s] = 1;
-    output[nFeatures() - 1] = 1;
+    // output[nFeatures() - 1] = 1;
     return output;
 }
 

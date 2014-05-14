@@ -5,9 +5,9 @@
 Transition::Transition(int _s, int _a, int _s2, double _r)
     : s(_s), a(_a), s2(_s2), r(_r)
 {}
-Transition::Transition(int _s, int _a)
-    : s(_s), a(_a)
-{}
+// Transition::Transition(int _s, int _a)
+//     : s(_s), a(_a)
+// {}
 
 vector<double> LSTDQ::solve(int nFeatures, int nSamples,
                             vector<double>& phi, vector<double>& td,
@@ -93,11 +93,12 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
         {
             Transition T = demonstration[t];
 
-            // T.s is never terminal
-            // bool terminal = (t == (demonstration.size() - 1));
+            // The "with a model" version of LSTDQ below assumes there are
+            // successor states to iterate over, so we ignore terminal states.
+            // if (mdp.cmp->isTerminal(T.s)) // However not occurring in practice
+            //     continue;
 
             vector<double> features = mdp.cmp->features(T.s, T.a);
-            // vector<double> features = mdp.cmp->features(T.s2);
 
             // Get transition probabilities to create averages instead of
             // relying on data.

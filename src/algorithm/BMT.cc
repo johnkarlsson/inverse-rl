@@ -100,7 +100,7 @@ double BMT::getRewardProbability(int rewardFunction) // Psi(B | ep, pi)
 }
 
 // Ax = b, returns x for rectangular systems
-vector<double> solve_rect(vector<double> A, vector<double> b)
+vector<double> BMT::solve_rect(vector<double> A, vector<double> b)
 {
     int n = b.size();
     int k = A.size() / n;

@@ -51,7 +51,8 @@ vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                                              vector<Policy*> policies,
                                              int demonstrationLength,
                                              int nDemonstrations = 1,
-                                             int initialState = -1);
+                                             int initialState = -1,
+                                             bool print = true);
 void test_generateTTT();
 
 vector<double> wGlobal;
@@ -155,19 +156,88 @@ void test_generateTTT()
     // cout << "Global count2: " << globalCount2 << endl;
 }
 
-//vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp, Policy& pi,
+/*
+double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T);
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int action, int nPlayouts, int T);
+*/
+
+/*
+ * These methods only perform some playouts from an optimal policy to generate
+ * natural noise to the optimal values.
+ */
+/*
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T)
+{
+    // Assuming optimal policy is stationary.
+    int a = optimalPolicy.probabilities(state)[0].first;
+    return getExpectedOptimalReward(optimalPolicy, mdp, state, a, nPlayouts, T);
+}
+*/
+
+double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T);
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int action, int nPlayouts, int T)
+{
+    // // Assuming optimal policy is stationary.
+    // int a = optimalPolicy.probabilities(state)[0].first;
+    auto transitions = mdp.cmp->kernel->getTransitionProbabilities(state,
+                                                                   action);
+
+    // Q(s,a) where a = pi*(s)
+    double Qsa = 0;
+
+    double expectedVs2 = 0; // Expected V(s')
+    for (auto tr : transitions)
+    {
+        int s2 = tr.first;
+        double p = tr.second;
+        double Qs2a = getAverageOptimalUtility(optimalPolicy, mdp, s2,
+                                               nPlayouts, T);
+        double Qs2a2= getAverageOptimalUtility(optimalPolicy, mdp, s2,
+                                               nPlayouts, T);
+        Qsa += p * (mdp.getReward(s2) + mdp.gamma * Qs2a2);
+        expectedVs2 += p * Qs2a;
+    }
+
+    return (Qsa - mdp.gamma * expectedVs2); // Average reward by definition
+}
+
+double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T)
+{
+    vector<Demonstration> playouts
+        = generateDemonstrations(mdp, {&optimalPolicy}, T, nPlayouts, state,
+                                 false);
+    // Calculate discounted sum of rewards
+    double totalPayoff = 0;
+    for (Demonstration d : playouts)
+        for (int t = 0; t < d.size(); ++t)
+            totalPayoff += d[t].r * pow(mdp.gamma, t); // starts with ^0
+    return (totalPayoff / (double) nPlayouts);
+}
+
 vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                                              vector<Policy*> policies,
                                              int demonstrationLength,
                                              int nDemonstrations,
-                                             int initialState)
+                                             int initialState,
+                                             bool print)
 {
-    cout << "Generating " << nDemonstrations << " demonstrations";
-    if (demonstrationLength > -1)
-        cout << " of length " << demonstrationLength;
-    cout << "..." << endl;
+    if (print)
+    {
+        cout << "Generating " << nDemonstrations << " demonstrations";
+        if (demonstrationLength > -1)
+            cout << " of length " << demonstrationLength;
+        cout << "..." << endl;
+    }
 
     vector<Demonstration> demonstrations(nDemonstrations);
+
+    bool printTicTacToe = false;
 
     for (int d = 0; d < nDemonstrations; ++d)
     {
@@ -190,7 +260,8 @@ vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                 mdp.cmp->kernel->getTransitionProbabilities(currentState,
                                                             action);
             currentState = sample(transitionProbabilities);
-            if (true) // print
+
+            if (printTicTacToe) // print
             {
                 ((TicTacToeCMP*)mdp.cmp)->printState(
                     TicTacToeCMP::State(
@@ -203,14 +274,18 @@ vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                         ((TicTacToeCMP*)mdp.cmp)->size, currentState))
                      << endl;
             }
-            demonstrations[d].push_back(Transition(previousState, action));
+
+            double reward = mdp.getReward(currentState);
+            demonstrations[d].push_back(Transition(previousState, action,
+                                                   currentState, reward));
         }
-        if (true) // print
+        if (printTicTacToe) // print
             cout << endl << "-------------------------------------------------"
                  << endl;
     }
 
-    cout << "Done!" << endl;
+    if (print)
+        cout << "Done!" << endl;
     return demonstrations;
 }
 
@@ -1190,6 +1265,15 @@ void test_valueiteration()
     /*
      */
 
+    cout << "{V}:\t";
+    for (int s = 0; s < states; ++s)
+    {
+        double avgValue = getAverageOptimalUtility(lspiPolicy, mdp, s, 100,
+                                                   100 /* -1 for ttt */);
+        cout << fixed << avgValue << "  \t\t";
+    }
+    cout << endl;
+
     cout << "~Q* - Q*" << endl;
     cout << "S\\A\t";
     for (int a = 0; a < actions; ++a)
@@ -1207,7 +1291,12 @@ void test_valueiteration()
         cout << endl;
     }
 
-    // Average reward for each state action pair?
+    int n = states * actions;
+    int k = cmp.nFeatures();
+    vector<double> A(n*k);
+    vector<double> b(n);
+    int i = 0;
+    int j = 0;
     for (int s = 0; s < states; ++s)
     {
         for (int a = 0; a < actions; ++a)
@@ -1230,11 +1319,46 @@ void test_valueiteration()
                 avgReward += p * mdp.getReward(s2);
             }
             double approxAvgReward = vi.Q[s][a] - gamma * avgValue;
+            double sampledAvgReward = getExpectedOptimalReward(lspiPolicy,
+                                                               mdp, s, a,
+                                                               5, 100);
             cout << "\tApproximate avg reward\t~<Q(" << s << "," << a << ")> =\t"
                  << approxAvgReward << endl;
-            cout << "\tTrue avg reward\t\t <Q(s,a)> =\t" << avgReward << endl;
+            cout << "\tTrue avg reward\t\t <Q(" << s << "," << a << ")> =\t" << avgReward << endl;
+            cout << "\tSampled avg reward\t {Q(" << s << "," << a << ")} =\t"
+                 << sampledAvgReward << endl;
+
+            vector<double> phi = cmp.features(s,a);
+            for (double f : phi)
+                A[i++] = f;
+            // b[j++] = approxAvgReward;
+            b[j++] = sampledAvgReward;
         }
     }
+
+    if (false) // Print Ax=b system
+    {
+        i = 0;
+        j = 0;
+        for (double ai : A)
+        {
+            cout << ai << " ";
+            if ((++i % k) == 0)
+                cout << "\t" << b[j++] << endl;
+        }
+    }
+
+    cout << "Solved rewards from linear system generated using features &" 
+         << " sampled average rewards:" << endl;
+    auto rewards = BMT::solve_rect(A, b);
+    // normalize(rewards);
+    for (auto r : rewards)
+        cout << r << "\t";
+    cout << endl;
+    cout << "True rewards:" << endl;
+    for (int s = 0; s < states; ++s)
+        cout << fixed << mdp.getReward(s) << " \t";
+    cout << endl;
 
     // Mathematica output
     /*
