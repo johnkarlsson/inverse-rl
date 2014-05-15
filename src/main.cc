@@ -53,6 +53,12 @@ vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                                              int nDemonstrations = 1,
                                              int initialState = -1,
                                              bool print = true);
+vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
+                                             int playoutHorizon,
+                                             vector<Demonstration>&
+                                                 lstdqDemonstrations,
+                                             Policy& optimalPolicy,
+                                             DiscreteMDP& mdp);
 void test_generateTTT();
 
 vector<double> wGlobal;
@@ -95,9 +101,6 @@ int main(int argc, const char *argv[])
     // compare_vi_qi(30, 10);
     return 0;
 }
-
-// extern int globalCount;
-// extern int globalCount2;
 
 void test_generateTTT()
 {
@@ -328,6 +331,66 @@ vector<double> test_BWT2_sampleRewardFunction(int features)
         output[i] = r();
     normalize(output);
     return output;
+}
+
+void test_BMT3()
+{
+    srand((unsigned)time(NULL));
+
+    /************************************************
+    * * * * * * * * * Main parameters * * * * * * * *
+    ************************************************/
+    const int    T_EXPERT_DEMO_HORIZON   =      1000;
+    const int    N_EXPERT_DEMONSTRATIONS =         1;
+    const int    N_REWARD_FUNCTIONS      =         5;
+    const int    N_POLICY_SAMPLES        =         5;
+    const int    N_EXPERTS               =         5;
+    const double EXPERT_TEMPERATURES[]   =
+                      {0.10, 0.15, 0.20, 1.00, 1.50};
+    /************************************************
+     ************************************************/
+    /************************************************
+    * * * * * * Semi static parameterrs * * * * * * *
+    ************************************************/
+    const int N_Q_APPROXIMATION_PLAYOUTS =         1;
+    const int T_Q_APPROXIMATION_HORIZON  =        10; // since gamma = 0.5
+    /************************************************
+     ************************************************/
+
+    // MDP setup
+    const double gamma = 0.5;
+    const int states = 4;
+    const int actions = 2;
+    RandomTransitionKernel kernel(states, actions);
+    RandomCMP cmp(&kernel);
+    RandomMDP mdp(&cmp, gamma);
+
+    // Demonstrations for LSTDQ only
+    auto lstdqDemonstrations = generateRandomMDPDemonstrations(mdp);
+
+    // Optimal policy
+    DeterministicPolicy lspiPolicy = LSTDQ::lspi(lstdqDemonstrations, mdp);
+
+    // Global set of reward functions
+    vector<vector<double>> rewardFunctions = 
+        sampleRewardFunctions(N_REWARD_FUNCTIONS, N_Q_APPROXIMATION_PLAYOUTS,
+                              T_Q_APPROXIMATION_HORIZON, lstdqDemonstrations,
+                              lspiPolicy, mdp);
+
+    // Generate demonstrations
+    vector<vector<Demonstration>> expertDemonstrations(N_EXPERTS);
+    for (int i = 0; i < N_EXPERTS; ++i)
+    {
+        SoftmaxPolicy expert(&cmp, lspiPolicy.getWeights(),
+                             EXPERT_TEMPERATURES[i]);
+        auto demonstrations = generateDemonstrations(mdp, {&expert},
+                                                     T_EXPERT_DEMO_HORIZON,
+                                                     N_EXPERT_DEMONSTRATIONS,
+               /* initialState uniform random */     -1,
+               /* Don't print demo generation */     false);
+        expertDemonstrations.push_back(demonstrations);
+    }
+
 }
 
 void test_BMT2()
@@ -1071,6 +1134,39 @@ vector<double> test_lstdq_randomMDP(RandomMDP& mdp, Policy& pi)
     return w;
 }
 
+vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
+                                             int playoutHorizon,
+                                             vector<Demonstration>&
+                                                 lstdqDemonstrations,
+                                             Policy& optimalPolicy,
+                                             DiscreteMDP& mdp)
+{
+    vector<vector<double>> rewardFunctions;
+
+    for (int i = 0; i < nFunctions; ++i)
+    {
+        vector<double> Phi;
+        vector<double> avgRewards;
+        for (Demonstration d : lstdqDemonstrations)
+        {
+            for (Transition tr : d)
+            {
+                double avgReward = getExpectedOptimalReward(optimalPolicy, mdp,
+                                                            tr.s, tr.a, nPlayouts,
+                                                            playoutHorizon);
+                vector<double> features = mdp.cmp->features(tr.s, tr.a);
+                copy(features.begin(), features.end(), back_inserter(Phi));
+                avgRewards.push_back(avgReward);
+            }
+        }
+
+        auto rewardFunction = BMT::solve_rect(Phi, avgRewards);
+        rewardFunctions.push_back(rewardFunction);
+    }
+
+    return rewardFunctions;
+}
+
 void test_valueiteration()
 {
     srand((unsigned)time(NULL));
@@ -1348,17 +1444,18 @@ void test_valueiteration()
         }
     }
 
+    // auto rewards = BMT::solve_rect(A, b);
+
     cout << "Solved rewards from linear system generated using features &" 
          << " sampled average rewards:" << endl;
-    auto rewards = BMT::solve_rect(A, b);
-    // normalize(rewards);
-    for (auto r : rewards)
-        cout << r << "\t";
-    cout << endl;
-    cout << "True rewards:" << endl;
-    for (int s = 0; s < states; ++s)
-        cout << fixed << mdp.getReward(s) << " \t";
-    cout << endl;
+    auto rewardFunctions = sampleRewardFunctions(5, 1, 50, demonstrations,
+                                                 lspiPolicy, mdp);
+    for (auto rewardFunction : rewardFunctions)
+    {
+        for (auto r : rewardFunction)
+            cout << r << "\t";
+        cout << endl;
+    }
 
     // Mathematica output
     /*
