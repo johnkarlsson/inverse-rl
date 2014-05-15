@@ -7,8 +7,8 @@ using namespace std;
 
 TabularTransitionKernel::TabularTransitionKernel(int _states, int _actions)
     : TransitionKernel(_states, _actions),
-      valid_actions(states, set<int>()),
-      kernel(states, vector<vector<double>>(actions, vector<double>(states)))
+      kernel(states, vector<vector<double>>(actions, vector<double>(states))),
+      valid_actions(states, set<int>())
 {
     // kernel = vector<vector<vector<double>>>(
     //         states, vector<vector<double>>(

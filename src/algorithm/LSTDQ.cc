@@ -157,16 +157,17 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
 
 
 DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
-                                DiscreteMDP const & mdp,
+                                DiscreteMDP const & mdp, bool print,
                                 double epsilon)
 {
-    return LSTDQ::lspi(D, mdp, vector<double>(mdp.cmp->nFeatures(),0), epsilon);
+    return LSTDQ::lspi(D, mdp, vector<double>(mdp.cmp->nFeatures(),0), print,
+                       epsilon);
 }
 
 DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
                                 DiscreteMDP const & mdp,
                                 vector<double> const & initialWeights,
-                                double epsilon)
+                                bool print, double epsilon)
 {
     assert(initialWeights.size() == mdp.cmp->nFeatures());
 
@@ -187,7 +188,7 @@ DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
     }
     if (i == MAX_ITERATIONS)
         cout << "LSPI ended after MAX_ITERATIONS = " << MAX_ITERATIONS << endl;
-    else
+    else if (print)
         cout << "LSPI converged after " << i << " iterations" << endl;
 
     return pi;

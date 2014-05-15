@@ -8,7 +8,7 @@
 using std::cout;
 
 DiscreteCMP::DiscreteCMP(TransitionKernel const *_kernel)
-    : kernel(_kernel), states(_kernel->states), actions(_kernel->actions)
+    : states(_kernel->states), actions(_kernel->actions), kernel(_kernel)
 {}
 
 const bool DEBUG_SAFEATURES = false;

@@ -13,25 +13,28 @@ using std::inner_product;
 
 
 
-BMT::BMT( RandomMDP mdp, vector<Demonstration> D,
-          vector<vector<double>*> const & rewardFunctions,
+BMT::BMT( RandomMDP _mdp, vector<Demonstration>& _lstdqDemonstrations,
+          vector<vector<double>> const & _rewardFunctions,
+          vector<DeterministicPolicy> const & optimalPolicies,
           vector<Policy*> const & policies)
-    : K(policies.size()), N(rewardFunctions.size())
+    : K(policies.size()), N(_rewardFunctions.size()),
+      mdp(_mdp), rewardFunctions(_rewardFunctions),
+      lstdqDemonstrations(_lstdqDemonstrations)
 {
-    vector<int> states(D.size());
-    for (Demonstration demo : D)
+    for (Demonstration demo : lstdqDemonstrations)
         for (Transition tr : demo)
-            states.push_back(tr.s); // TODO: Alot of repetition of states here. Make it std::set
+            states.insert(tr.s);
+
     policyRewardLoss = vector<vector<double>>(K, vector<double>(N, 0));
     for (int j = 0; j < N; ++j)
     {
-        mdp.setRewardWeights(*rewardFunctions[j]);
-        vector<double> weightsOpt = LSTDQ::lspi(D, mdp).getWeights();
+        mdp.setRewardWeights(rewardFunctions[j]);
+        // vector<double> weightsOpt = LSTDQ::lspi(D, mdp).getWeights();
+        vector<double> weightsOpt = optimalPolicies[j].getWeights();
         for (int k = 0; k < K; ++k)
         {
-            vector<double> weightsEval = LSTDQ::lstdq(D, *policies[k],
-                                                      mdp);
-
+            vector<double> weightsEval = LSTDQ::lstdq(lstdqDemonstrations,
+                                                      *policies[k], mdp);
             policyRewardLoss[k][j] = loss(weightsEval, weightsOpt,
                                           states, *mdp.cmp);
         }
@@ -43,25 +46,77 @@ BMT::BMT( RandomMDP mdp, vector<Demonstration> D,
     std::sort(sortedLosses.begin(), sortedLosses.end()); // Ascending
 }
 
+vector<double> BMT::getNormalizedRewardProbabilities()
+{
+    vector<double> output;
+    double sum = 0;
+    for (int i = 0; i < N; ++i)
+    {
+        double p = getRewardProbability(i);
+        sum += p;
+        output.push_back(p);
+    }
+    for (int i = 0; i < N; ++i)
+        output[i] /= sum;
+    return output;
+}
+
+double BMT::loss(vector<double> const & weightsEval,
+                 vector<double> const & weightsOpt)
+{
+    return BMT::loss(weightsEval, weightsOpt, states, *mdp.cmp, true);
+}
+
+// double BMT::optimalPolicyLoss()
+// {
+//     Policy& pi = optimalPolicy();
+// }
+
+DeterministicPolicy BMT::optimalPolicy()
+{
+    int maxRewardFunction = 0;
+    double maxProbability = -DBL_MAX;
+    for (int i = 0; i < N; ++i)
+    {
+        double p = getRewardProbability(i);
+        if (p > maxProbability)
+        {
+            maxRewardFunction = i;
+            maxProbability = p;
+        }
+    }
+
+    mdp.setRewardWeights(rewardFunctions[maxRewardFunction]);
+
+    return LSTDQ::lspi(lstdqDemonstrations, mdp);
+}
 
 double BMT::loss(vector<double> const & wEval,
                  vector<double> const & wOpt,
-                 vector<int> const & states, DiscreteCMP const & cmp)
+                 set<int> const & states, DiscreteCMP const & cmp,
+                 bool calculateSum)
 {
     double sup = -DBL_MAX;
     // TODO: Do this for all state action pairs in a demonstration instead?
     // Probably not though
+    double sum = 0;
     for (int s : states)
     {
         vector<double> phi = cmp.features(s);
         double vOpt = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
         double vEval = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
         double diff = fabs(vOpt - vEval);
-        if (diff > sup)
-            sup = diff;
+        if (calculateSum)
+            sum += diff;
+        else
+            if (diff > sup)
+                sup = diff;
     }
 
-    return sup;
+    if (calculateSum)
+        return sum;
+    else
+        return sup;
 }
 
 double BMT::getLoss(int policy, int rewardFunction)

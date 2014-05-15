@@ -8,7 +8,7 @@ int stateIndex(int x, int y, int size)
 GridTransitionKernel::GridTransitionKernel(int size)
     : TabularTransitionKernel(size*size, 4)
 {
-    int i = 0;
+    // int i = 0;
     // Initialize grid transition probabilities.
     for (int x = 0; x < size; ++x)
         for (int y = 0; y < size; ++y)

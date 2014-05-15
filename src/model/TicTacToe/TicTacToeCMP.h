@@ -74,7 +74,7 @@ class TicTacToeCMP : public DiscreteCMP
                             int v = TicTacToeTransitionKernel::pointValue(s, p);
                             if (v != 0)
                             {
-                                int vi = (vi == 1) ? 2 : 1;
+                                int vi = (v == 1) ? 2 : 1;
                                 invertedState = TicTacToeTransitionKernel
                                             ::successor(invertedState, p, vi);
                             }
@@ -109,6 +109,7 @@ class TicTacToeCMP : public DiscreteCMP
         TicTacToeCMP(TicTacToeTransitionKernel const * kernel);
         State currentState;
 
+        using DiscreteCMP::features;
         std::vector<double> features(const State& s) const;
         // std::vector<double> features() const { return features(currentState); };
         std::vector<double> features() const

@@ -12,9 +12,9 @@ using std::endl;
 
 TicTacToeCMP::TicTacToeCMP(TicTacToeTransitionKernel const * tttKernel)
     : DiscreteCMP(tttKernel),
-      actions(tttKernel->actions),
       currentState(tttKernel->size),
-      size(tttKernel->size)
+      size(tttKernel->size),
+      actions(tttKernel->actions)
 {}
 
 void TicTacToeCMP::move(int position, int value)

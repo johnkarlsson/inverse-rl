@@ -39,6 +39,11 @@ RandomMDP::RandomMDP(const RandomCMP *cmp, double gamma)
     */
 }
 
+vector<double> RandomMDP::getRewardWeights()
+{
+    return rewardWeights;
+}
+
 void RandomMDP::setRewardWeights(vector<double> weights)
 {
     rewardWeights = weights;

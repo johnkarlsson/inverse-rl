@@ -20,7 +20,7 @@ class Transition
         Transition(int _s, int _a, int _s2, double _r);
         // Transition(int _s, int _a);
         int s, a;
-        double r, s2; // Not used in LSTDQ "with a model",
+        double s2, r; // Not used in LSTDQ "with a model",
                       // but useful for MC playouts.
     private:
 };
@@ -37,11 +37,12 @@ class LSTDQ
                                     DiscreteMDP const & mdp);
         static DeterministicPolicy lspi(vector<Demonstration> const & D,
                                         DiscreteMDP const & mdp,
-                                        vector<double> const &
-                                            initialWeights,
+                                        vector<double> const & initialWeights,
+                                        bool print = true,
                                         double epsilon = 1e-6);
         static DeterministicPolicy lspi(vector<Demonstration> const & D,
                                         DiscreteMDP const & mdp,
+                                        bool print = true,
                                         double epsilon = 1e-6);
 };
 

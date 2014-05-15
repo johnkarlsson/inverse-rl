@@ -31,7 +31,7 @@ class SoftmaxDirichletPrior
     : public StateActionDirichlet
 {
     public:
-        SoftmaxDirichletPrior(int _actions) : StateActionDirichlet(_actions) {} 
+        SoftmaxDirichletPrior(int _actions) : StateActionDirichlet(_actions) {}
         double getAlpha(int s, int a) { return 1; }
 };
 
@@ -47,10 +47,6 @@ class DirichletPolicyPosterior
                 for (Transition tr : d)
                     getActionCounts(tr.s)[tr.a]++;
         }
-        ~DirichletPolicyPosterior()
-        {
-            std::cout << "~DirichletPolicyPosterior()" << std::endl;
-        }
 
         Policy& samplePolicy();
         double getAlpha(int s, int a);
@@ -58,6 +54,7 @@ class DirichletPolicyPosterior
 
     private:
         DirichletPolicyPosterior(int _actions);
+        DirichletPolicyPosterior();
         StateActionDirichlet& prior;
         std::map<int, vector<int>> stateActionCounts;
         class SampledPolicy

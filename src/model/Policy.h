@@ -40,10 +40,10 @@ class FeaturePolicy // Abstract
     public:
         FeaturePolicy(DiscreteCMP const * const _cmp,
                             vector<double> _weights)
-            : cmp(_cmp), weights(_weights)
+            : weights(_weights), cmp(_cmp)
         {}
         FeaturePolicy(DiscreteCMP const * const _cmp)
-            : cmp(_cmp), weights(_cmp->nFeatures(), 0)
+            : weights(_cmp->nFeatures(), 0), cmp(_cmp)
         {}
 
 

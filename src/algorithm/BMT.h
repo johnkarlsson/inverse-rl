@@ -2,6 +2,7 @@
 #define BMT_H
 
 #include <vector>
+#include <set>
 
 #include "../model/DiscreteCMP.h"
 #include "../model/Policy.h"
@@ -9,19 +10,27 @@
 #include "../algorithm/LSTDQ.h" // TODO: For Demonstration
 
 using std::vector;
+using std::set;
 
 class BMT
 {
     public:
-        BMT( RandomMDP mdp, vector<Demonstration> D,
-             vector<vector<double>*> const & rewardFunctions,
+        BMT( RandomMDP mdp, vector<Demonstration>& D,
+             vector<vector<double>> const & rewardFunctions,
+             vector<DeterministicPolicy> const & optimalPolicies,
              vector<Policy*> const & policies);
-        static double loss(vector<double> const & weightsEval, // TODO: Make private
+        double loss(vector<double> const & weightsEval,
+                    vector<double> const & weightsOpt);
+        static double loss(vector<double> const & weightsEval,
                            vector<double> const & weightsOpt,
-                           vector<int> const & states, DiscreteCMP const & cmp);
+                           set<int> const & states, DiscreteCMP const & cmp,
+                           bool sum = false);
         double getLoss(int policy, int rewardFunction);
 
         double getRewardProbability(int rewardFunction);
+        vector<double> getNormalizedRewardProbabilities();
+
+        DeterministicPolicy optimalPolicy();
 
         // Linalg
         static vector<double> solve_rect(vector<double> A, vector<double> b);
@@ -31,6 +40,10 @@ class BMT
         const int N;
         vector<vector<double>> policyRewardLoss;
         vector<double> sortedLosses;
+        RandomMDP mdp;
+        vector<vector<double>> const & rewardFunctions;
+        vector<Demonstration> const & lstdqDemonstrations;
+        set<int> states;
 };
 
 #endif
