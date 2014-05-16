@@ -6,6 +6,8 @@
 #include <numeric>
 #include <algorithm>
 
+#include <gsl/gsl_cdf.h>
+
 #include "../model/DiscreteCMP.h"
 
 using std::vector;
@@ -16,10 +18,12 @@ using std::inner_product;
 BMT::BMT( RandomMDP _mdp, vector<Demonstration>& _lstdqDemonstrations,
           vector<vector<double>> const & _rewardFunctions,
           vector<DeterministicPolicy> const & optimalPolicies,
-          vector<Policy*> const & policies)
+          vector<Policy*> const & policies,
+          double _c)
     : K(policies.size()), N(_rewardFunctions.size()),
       mdp(_mdp), rewardFunctions(_rewardFunctions),
-      lstdqDemonstrations(_lstdqDemonstrations)
+      lstdqDemonstrations(_lstdqDemonstrations),
+      c(_c)
 {
     for (Demonstration demo : lstdqDemonstrations)
         for (Transition tr : demo)
@@ -124,10 +128,12 @@ double BMT::getLoss(int policy, int rewardFunction)
     return policyRewardLoss[policy][rewardFunction];
 }
 
-double beta(double ep_lower, double ep_upper)
+double BMT::beta(double ep_lower, double ep_upper)
 {
-    const static double c = 0.1;
-    return (exp(-c*ep_lower) - exp(-c*ep_upper));
+    // const static double c = 0.1;
+    return (gsl_cdf_gamma_P(ep_upper, c, 0.1)
+            - gsl_cdf_gamma_P(ep_lower, c, 0.1));
+    // return (exp(-c*ep_lower) - exp(-c*ep_upper));
 }
 
 double BMT::getRewardProbability(int rewardFunction) // Psi(B | ep, pi)

@@ -18,7 +18,8 @@ class BMT
         BMT( RandomMDP mdp, vector<Demonstration>& D,
              vector<vector<double>> const & rewardFunctions,
              vector<DeterministicPolicy> const & optimalPolicies,
-             vector<Policy*> const & policies);
+             vector<Policy*> const & policies,
+             double _c);
         double loss(vector<double> const & weightsEval,
                     vector<double> const & weightsOpt);
         static double loss(vector<double> const & weightsEval,
@@ -35,6 +36,8 @@ class BMT
         // Linalg
         static vector<double> solve_rect(vector<double> A, vector<double> b);
 
+        double beta(double ep_lower, double ep_upper);
+
     private:
         const int K;
         const int N;
@@ -44,6 +47,7 @@ class BMT
         vector<vector<double>> const & rewardFunctions;
         vector<Demonstration> const & lstdqDemonstrations;
         set<int> states;
+        const double c;
 };
 
 #endif

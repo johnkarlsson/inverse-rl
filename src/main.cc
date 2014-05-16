@@ -344,18 +344,21 @@ void test_BMT3()
     /************************************************
     * * * * * * * * * Main parameters * * * * * * * *
     ************************************************/
-    const int    N_EXPERT_DEMO_HORIZONS   =        2;
+    const int    N_EXPERT_DEMO_HORIZONS   =        3;
     const int    T_EXPERT_DEMO_HORIZONS[] =
-                                            {1, 100};
+                                      {1, 500, 1000}; // Max 5000 makes sense
     const int    N_EXPERT_DEMONSTRATIONS  =        1;
-    const int    N_REWARD_FUNCTIONS       =       20;
+    const int    N_REWARD_FUNCTIONS       =       10;
     const int    N_POLICY_SAMPLES         =       10;
     const int    N_EXPERTS                =        5;
     const double EXPERT_TEMPERATURES[]    =
                     //{0.0001, 0.75, 1.00, 3.00, 5.00};
-                      {0.10, 0.20, 0.30, 3.00, 3.50};
+                      {0.10, 0.15, 0.20, 3.00, 3.50};
                     //{0.50, 0.75, 1.00, 3.00, 3.50};
                     //{0.10, 0.15, 0.20, 1.00, 1.50};
+    const double EXPERT_OPTIMALITY_PRIORS[]    =
+   /* ACTUALLY ALPHA IN GAMMA CDF */ {1, 1, 1, 5, 5};
+                       //  {2.0, 2.0, 2.0, 0.5, 0.5};
     /************************************************
      ************************************************/
     /************************************************
@@ -369,8 +372,8 @@ void test_BMT3()
      ************************************************/
 
     // MDP setup
-    // const double gamma = 0.75;
-    const double gamma = 0.50;
+    const double gamma = 0.95;
+    // const double gamma = 0.50;
     const int states = 8;
     const int actions = 3;
     RandomTransitionKernel kernel(states, actions);
@@ -419,9 +422,10 @@ void test_BMT3()
             cout << fixed << r << "\t";
         cout << endl;
         cout << "\tSampled reward functions:" << endl;
+        int i = 0;
         for (auto rf : rewardFunctions)
         {
-            cout << "\t\t";
+            cout << "\t (" << i++ << ")\t";
             for (auto r : rf)
                 cout << fixed << r << "\t";
             cout << endl;
@@ -449,14 +453,14 @@ void test_BMT3()
         cout << endl;
         cout << "\tSampled reward functions' optimal policies' optimal weights:"
              << endl;
+        int i = 0;
         for (auto pi : optimalPolicies)
         {
-            cout << "\t\t";
+            cout << "\t (" << i++ << ")\t";
             for (auto w : pi.getWeights())
                 cout << fixed << w << "\t";
             cout << endl;
         }
-
         // TODO: Think about this:
         // Sampled reward functions losses w.r.t. true reward functions
         // should here be a cap of how close we can get...
@@ -519,7 +523,7 @@ void test_BMT3()
         for (int i = 0; i < N_EXPERTS; i++)
             for (int k = 0; k < N_POLICY_SAMPLES; ++k)
                 sampledPolicies[i].push_back(&posteriorPolicies[i].samplePolicy());
-        if (PRINT_DEBUG)
+        if (false && PRINT_DEBUG)
         {
             cout.precision(numeric_limits< double >::digits10 - 12);
             cout << "\tSampled policies state action probabilities (first policy "
@@ -546,7 +550,7 @@ void test_BMT3()
         for (int i = 0; i < N_EXPERTS; ++i)
         {
             BMT bmt(mdp, lstdqDemonstrations, rewardFunctions, optimalPolicies,
-                    sampledPolicies[i]);
+                    sampledPolicies[i], EXPERT_OPTIMALITY_PRIORS[i]);
             bmts.push_back(bmt);
         }
 
@@ -589,7 +593,7 @@ void test_BMT3()
              << finalLoss
              << endl;
 
-        if (false)
+        if (true)
         {
             // Printing of loss matrices
             for (int i = 0; i < N_EXPERTS; ++i)
@@ -597,9 +601,10 @@ void test_BMT3()
                 BMT& bmt = bmts[i];
                 int K = N_POLICY_SAMPLES;
                 int N = N_REWARD_FUNCTIONS;
-                cout.precision(numeric_limits< double >::digits10 - 12);
-                cout << "Loss matrix" << endl;
+                if (true) // loss matrix
                 {
+                    cout.precision(numeric_limits< double >::digits10 - 12);
+                    cout << "Loss matrix" << endl;
                     for (int k = 0; k < K; ++k)
                     {
                         for (int j = 0; j < N; ++j)
@@ -610,11 +615,17 @@ void test_BMT3()
                     }
                 }
                 cout.precision(numeric_limits< double >::digits10 - 12);
-                cout << "Reward function probabilities (unnormalised):" << endl;
-                for (int j = 0; j < N; ++j)
-                {
-                    cout << fixed << bmt.getRewardProbability(j) << "\t";
-                }
+                // cout << "Reward function probabilities (unnormalised):" << endl;
+                // for (int j = 0; j < N; ++j)
+                //     cout << fixed << bmt.getRewardProbability(j) << "\t";
+                vector<double> rewardProbabilities
+                    = bmt.getNormalizedRewardProbabilities();
+                cout << "Reward function probabilities:" << endl;
+                for (int rr = 0; rr < N_REWARD_FUNCTIONS; ++rr)
+                    cout << rr << "\t";
+                cout << endl;
+                for (auto rewardProb : rewardProbabilities)
+                    cout << fixed << rewardProb << "\t";
                 cout << endl;
                 cout << endl;
             }
