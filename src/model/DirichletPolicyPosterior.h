@@ -31,8 +31,28 @@ class SoftmaxDirichletPrior
     : public StateActionDirichlet
 {
     public:
-        SoftmaxDirichletPrior(int _actions) : StateActionDirichlet(_actions) {}
-        double getAlpha(int s, int a) { return 1; }
+        SoftmaxDirichletPrior(int _actions)
+            : StateActionDirichlet(_actions), cmp(NULL)
+        {}
+        SoftmaxDirichletPrior(int _actions, DiscreteCMP const * const _cmp)
+            : StateActionDirichlet(_actions), cmp(_cmp)
+        {}
+        double getAlpha(int s, int a)
+        {
+            if (cmp) 
+            {
+                // alpha = 0 so that no multinomials with positive probabilities
+                // for illegal actions can be created.
+                // The dirichlet dist. is defined for alpha>0 but having single
+                // alphas==0 works fine with gsl and in practice.
+                auto validActions = cmp->kernel->getValidActions(s);
+                if (validActions.find(a) == validActions.end())
+                    return 0;
+            }
+            return 0.01;
+        }
+    private:
+        DiscreteCMP const * cmp;
 };
 
 class DirichletPolicyPosterior
@@ -45,7 +65,12 @@ class DirichletPolicyPosterior
         {
             for (Demonstration d : D)
                 for (Transition tr : d)
+                {
+                    int prevCount = getActionCounts(tr.s)[tr.a];
                     getActionCounts(tr.s)[tr.a]++;
+                    int afterCount = getActionCounts(tr.s)[tr.a];
+                    assert(prevCount == (afterCount - 1));
+                }
         }
 
         Policy& samplePolicy();

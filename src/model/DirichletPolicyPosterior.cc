@@ -38,10 +38,10 @@ vector<pair<int,double>>
     DirichletPolicyPosterior::SampledPolicy::probabilities(int s)
 {
     vector<double>& multinomial = getMultinomial(s);
-
-    vector<pair<int,double>> output(parent->actions);
+    vector<pair<int,double>> output;
     for (int a = 0; a < parent->actions; ++a)
-        output[a] = {a, multinomial[a]};
+        if (multinomial[a] > 0)
+            output.push_back({a, multinomial[a]});
 
     return output;
 }

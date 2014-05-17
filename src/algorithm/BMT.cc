@@ -15,7 +15,7 @@ using std::inner_product;
 
 
 
-BMT::BMT( RandomMDP _mdp, vector<Demonstration>& _lstdqDemonstrations,
+BMT::BMT( FeatureMDP _mdp, vector<Demonstration>& _lstdqDemonstrations,
           vector<vector<double>> const & _rewardFunctions,
           vector<DeterministicPolicy> const & optimalPolicies,
           vector<Policy*> const & policies,
@@ -71,30 +71,6 @@ double BMT::loss(vector<double> const & weightsEval,
     return BMT::loss(weightsEval, weightsOpt, states, *mdp.cmp, true);
 }
 
-// double BMT::optimalPolicyLoss()
-// {
-//     Policy& pi = optimalPolicy();
-// }
-
-DeterministicPolicy BMT::optimalPolicy()
-{
-    int maxRewardFunction = 0;
-    double maxProbability = -DBL_MAX;
-    for (int i = 0; i < N; ++i)
-    {
-        double p = getRewardProbability(i);
-        if (p > maxProbability)
-        {
-            maxRewardFunction = i;
-            maxProbability = p;
-        }
-    }
-
-    mdp.setRewardWeights(rewardFunctions[maxRewardFunction]);
-
-    return LSTDQ::lspi(lstdqDemonstrations, mdp);
-}
-
 double BMT::loss(vector<double> const & wEval,
                  vector<double> const & wOpt,
                  set<int> const & states, DiscreteCMP const & cmp,
@@ -131,9 +107,9 @@ double BMT::getLoss(int policy, int rewardFunction)
 double BMT::beta(double ep_lower, double ep_upper)
 {
     // const static double c = 0.1;
-    return (gsl_cdf_gamma_P(ep_upper, c, 0.1)
-            - gsl_cdf_gamma_P(ep_lower, c, 0.1));
-    // return (exp(-c*ep_lower) - exp(-c*ep_upper));
+    //return (gsl_cdf_gamma_P(ep_upper, c, 0.1)
+    //        - gsl_cdf_gamma_P(ep_lower, c, 0.1));
+    return (exp(-c*ep_lower) - exp(-c*ep_upper));
 }
 
 double BMT::getRewardProbability(int rewardFunction) // Psi(B | ep, pi)
@@ -146,7 +122,7 @@ double BMT::getRewardProbability(int rewardFunction) // Psi(B | ep, pi)
         {
             double ep_lower = sortedLosses[i];
             double ep_upper = sortedLosses[i+1];
-            if (getLoss(k, j) < ep_lower)
+            if (getLoss(k, j) <= ep_lower)
             {
                 int nEpOptimalRewardFunctions = 0;
                 for (int l = 0; l < N; ++l)
@@ -187,3 +163,28 @@ vector<double> BMT::solve_rect(vector<double> A, vector<double> b)
 
     return output;
 }
+
+// double BMT::optimalPolicyLoss()
+// {
+//     Policy& pi = optimalPolicy();
+// }
+
+DeterministicPolicy BMT::optimalPolicy()
+{
+    int maxRewardFunction = 0;
+    double maxProbability = -DBL_MAX;
+    for (int i = 0; i < N; ++i)
+    {
+        double p = getRewardProbability(i);
+        if (p > maxProbability)
+        {
+            maxRewardFunction = i;
+            maxProbability = p;
+        }
+    }
+
+    mdp.setRewardWeights(rewardFunctions[maxRewardFunction]);
+
+    return LSTDQ::lspi(lstdqDemonstrations, mdp);
+}
+

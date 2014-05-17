@@ -7,7 +7,8 @@
 #include <cmath>
 #include <stdexcept>
 
-class TicTacToeCMP : public DiscreteCMP
+class TicTacToeCMP
+    : public DiscreteCMP
 {
     public:
 

@@ -15,7 +15,7 @@ using std::set;
 class BMT
 {
     public:
-        BMT( RandomMDP mdp, vector<Demonstration>& D,
+        BMT( FeatureMDP mdp, vector<Demonstration>& D,
              vector<vector<double>> const & rewardFunctions,
              vector<DeterministicPolicy> const & optimalPolicies,
              vector<Policy*> const & policies,
@@ -43,7 +43,7 @@ class BMT
         const int N;
         vector<vector<double>> policyRewardLoss;
         vector<double> sortedLosses;
-        RandomMDP mdp;
+        FeatureMDP mdp;
         vector<vector<double>> const & rewardFunctions;
         vector<Demonstration> const & lstdqDemonstrations;
         set<int> states;

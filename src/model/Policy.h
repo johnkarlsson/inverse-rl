@@ -66,6 +66,11 @@ class FeaturePolicy // Abstract
             std::copy(w.begin(), w.end(), weights.begin());
         }
 
+        void setWeight(int index, double value)
+        {
+            weights[index] = value;
+        }
+
     protected:
         vector<double> weights;
         DiscreteCMP const * const cmp;

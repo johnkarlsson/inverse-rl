@@ -61,13 +61,22 @@ vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
                                              DiscreteMDP& mdp);
 void test_generateTTT();
 void test_BMT3();
+void test_BMT4();
 
 vector<double> wGlobal;
 
 int main(int argc, const char *argv[])
 {
-    test_BMT3();
-    return 0;
+    if (true)
+    {
+        test_BMT4();
+        return 0;
+    }
+    if (true)
+    {
+        test_BMT3();
+        return 0;
+    }
 
     if (true)
     {
@@ -106,228 +115,6 @@ int main(int argc, const char *argv[])
     return 0;
 }
 
-void test_generateTTT()
-{
-    TicTacToeTransitionKernel kernel = TicTacToeTransitionKernel(3);
-    TicTacToeCMP cmp(&kernel);
-    TicTacToeMDP mdp(&cmp, true); // True rewards
-    RandomTTTPolicy policyRandom(&cmp);
-    OptimalTTTPolicy policyOptimal(&cmp);
-    // vector<Policy*> policies = {&policyRandom, &policyOptimal};
-    vector<Policy*> policies = { &policyRandom };
-    vector<Demonstration> demonstrations
-        = generateDemonstrations(mdp, policies, -1, 10, 0);
-
-    // vector<double> optWeights(cmp.nFeatures());
-    auto optWeights = LSTDQ::lstdq(demonstrations, policyOptimal, mdp);
-    cout.precision(numeric_limits<double>::digits10 - 12);
-    cout << "Optimal weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
-    for (double d : optWeights)
-        cout << fixed << d << "\t";
-    cout << endl;
-    cout << "LSPI weights: " << endl;
-    DeterministicPolicy lspiPolicy = LSTDQ::lspi(demonstrations, mdp);
-    auto lspiWeights = lspiPolicy.getWeights();
-    for (double d : lspiWeights)
-        cout << fixed << d << "\t";
-    cout << endl;
-
-    const int maxPrints = 0;
-    int prints = 0;
-    for (Demonstration d : demonstrations)
-    {
-        if (++prints > maxPrints)
-            break;
-        /*
-        for (Transition tr : d)
-        {
-            int s = tr.s;
-            cmp.printState(TicTacToeCMP::State(cmp.size, s));
-        }
-        */
-        int s = d.back().s;
-        cmp.printState(TicTacToeCMP::State(cmp.size, s));
-        auto phi = cmp.features(s);
-        cout << "Value X(s,d,t,x,c,f) O(s,d,t,x,c,f) = " << endl << "\t";
-        for (double f : phi)
-            cout << fixed << f << "\t";
-        cout << endl << " *\t";
-        double q = std::inner_product(phi.begin(), phi.end(),
-                                      optWeights.begin(), 0.0);
-        for (double d : optWeights)
-            cout << fixed << d << "\t";
-        cout << endl;
-        cout << " =\t" << q << endl;
-    }
-    // cout << "Global count: " << globalCount << endl;
-    // cout << "Global count2: " << globalCount2 << endl;
-}
-
-/*
-double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T);
-double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int action, int nPlayouts, int T);
-*/
-
-/*
- * These methods only perform some playouts from an optimal policy to generate
- * natural noise to the optimal values.
- */
-/*
-double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T)
-{
-    // Assuming optimal policy is stationary.
-    int a = optimalPolicy.probabilities(state)[0].first;
-    return getExpectedOptimalReward(optimalPolicy, mdp, state, a, nPlayouts, T);
-}
-*/
-
-double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T);
-double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int action, int nPlayouts, int T)
-{
-    // // Assuming optimal policy is stationary.
-    // int a = optimalPolicy.probabilities(state)[0].first;
-    auto transitions = mdp.cmp->kernel->getTransitionProbabilities(state,
-                                                                   action);
-
-    // Q(s,a) where a = pi*(s)
-    double Qsa = 0;
-
-    double expectedVs2 = 0; // Expected V(s')
-    for (auto tr : transitions)
-    {
-        int s2 = tr.first;
-        double p = tr.second;
-        double Qs2a = getAverageOptimalUtility(optimalPolicy, mdp, s2,
-                                               nPlayouts, T);
-        double Qs2a2= getAverageOptimalUtility(optimalPolicy, mdp, s2,
-                                               nPlayouts, T);
-        Qsa += p * (mdp.getReward(s2) + mdp.gamma * Qs2a2);
-        expectedVs2 += p * Qs2a;
-    }
-
-    return (Qsa - mdp.gamma * expectedVs2); // Average reward by definition
-}
-
-double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T)
-{
-    vector<Demonstration> playouts
-        = generateDemonstrations(mdp, {&optimalPolicy}, T, nPlayouts, state,
-                                 false);
-    // Calculate discounted sum of rewards
-    double totalPayoff = 0;
-    for (Demonstration d : playouts)
-        for (int t = 0; t < d.size(); ++t)
-            totalPayoff += d[t].r * pow(mdp.gamma, t); // starts with ^0
-    return (totalPayoff / (double) nPlayouts);
-}
-
-vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
-                                             vector<Policy*> policies,
-                                             int demonstrationLength,
-                                             int nDemonstrations,
-                                             int initialState,
-                                             bool print)
-{
-    if (print)
-    {
-        cout << "Generating " << nDemonstrations << " demonstrations";
-        if (demonstrationLength > -1)
-            cout << " of length " << demonstrationLength;
-        cout << "..." << endl;
-    }
-
-    vector<Demonstration> demonstrations(nDemonstrations);
-
-    bool printTicTacToe = false;
-
-    for (int d = 0; d < nDemonstrations; ++d)
-    {
-        int currentState;
-        if (initialState == -1) // Uniform initial state dist
-            currentState = rand() % mdp.cmp->states;
-        else
-            currentState = initialState;
-        int previousState;
-
-        for (int t = 0;
-             (demonstrationLength < 0 || t < demonstrationLength)
-                 && !mdp.cmp->isTerminal(currentState);
-             ++t)
-        {
-            Policy& pi = *policies[t % policies.size()];
-            int action = sample(pi.probabilities(currentState));
-            previousState = currentState;
-            auto transitionProbabilities = 
-                mdp.cmp->kernel->getTransitionProbabilities(currentState,
-                                                            action);
-            currentState = sample(transitionProbabilities);
-
-            if (printTicTacToe) // print
-            {
-                ((TicTacToeCMP*)mdp.cmp)->printState(
-                    TicTacToeCMP::State(
-                        ((TicTacToeCMP*)mdp.cmp)->size, currentState));
-                cout << "isTerminal: " << mdp.cmp->isTerminal(currentState)
-                     << endl;
-                cout << "winner: " << 
-                    ((TicTacToeCMP*)mdp.cmp)->winner(
-                    TicTacToeCMP::State(
-                        ((TicTacToeCMP*)mdp.cmp)->size, currentState))
-                     << endl;
-            }
-
-            double reward = mdp.getReward(currentState);
-            demonstrations[d].push_back(Transition(previousState, action,
-                                                   currentState, reward));
-        }
-        if (printTicTacToe) // print
-            cout << endl << "-------------------------------------------------"
-                 << endl;
-    }
-
-    if (print)
-        cout << "Done!" << endl;
-    return demonstrations;
-}
-
-vector<Demonstration> generateSoftmaxDemonstrations(RandomMDP& mdp,
-                                                    int demonstrationLength,
-                                                    SoftmaxPolicy& pi)
-{
-    const int nDemonstrations = 1;
-    // const int demonstrationLength = 1000;
-    vector<Demonstration> demonstrations(nDemonstrations,
-                                         Demonstration(demonstrationLength,
-                                                       Transition()));
-
-    for (int d = 0; d < nDemonstrations; ++d)
-    {
-        int currentState = rand() % mdp.cmp->states; // Uniform initial state dist
-        int previousState;
-
-        for (int t = 0; t < demonstrationLength; ++t)
-        {
-            int action = sample(pi.probabilities(currentState));
-            previousState = currentState;
-            auto transitionProbabilities = 
-                mdp.cmp->kernel->getTransitionProbabilities(currentState,
-                                                            action);
-            currentState = sample(transitionProbabilities);
-            double reward = mdp.getReward(currentState); // Deterministic state rewards
-            demonstrations[d][t] = Transition(previousState, action,
-                                              currentState, reward);
-        }
-    }
-
-    return demonstrations;
-}
-
 vector<double> test_BWT2_sampleRewardFunction(int features)
 {
     vector<double> output(features, 0);
@@ -335,6 +122,316 @@ vector<double> test_BWT2_sampleRewardFunction(int features)
         output[i] = r();
     normalize(output);
     return output;
+}
+
+void test_BMT4()
+{
+    srand((unsigned)time(NULL));
+
+    /************************************************
+    * * * * * * * * * Main parameters * * * * * * * *
+    ************************************************/
+    const int    N_EXPERT_PLAYOUTS        =        2;
+    const int    N_N_EXPERT_PLAYOUTS[]    =
+                                         {1, 100000};
+    const int    N_REWARD_FUNCTIONS       =       10;
+    const int    N_POLICY_SAMPLES         =       10;
+    const int    N_EXPERTS                =        4;
+    const double EXPERT_TEMPERATURES[]    =
+                          {0.0001, 0.01, 0.01, 0.01};
+    const double EXPERT_OPTIMALITY_PRIORS[]    =
+                                {1.0, 1.0, 1.0, 1.0};
+    /************************************************
+     ************************************************/
+    /************************************************
+    * * * * * * Semi static parameterrs * * * * * * *
+    ************************************************/
+    const bool PRINT_DEBUG = true;
+    const int N_Q_APPROXIMATION_PLAYOUTS =         1;
+    const int T_Q_APPROXIMATION_HORIZON  =        -1;
+    /************************************************
+     ************************************************/
+
+    // MDP setup
+    const double gamma = 1;
+    TicTacToeTransitionKernel kernel = TicTacToeTransitionKernel(3);
+    TicTacToeCMP cmp(&kernel);
+    TicTacToeMDP mdp(&cmp, true); // True rewards
+    TicTacToeMDP mutableMdp(&cmp, false); // True rewards
+    RandomTTTPolicy randomPolicy(&cmp, false);
+    OptimalTTTPolicy optimalPolicy(&cmp);
+
+    // Demonstrations for LSTDQ only
+    cout << "Generating LSTDQ demonstrations..." << endl;
+    vector<Demonstration> lstdqDemonstrations
+        = generateDemonstrations(mdp, { &randomPolicy } , -1,
+                100, // Number of playouts
+             // 5000, // Number of playouts
+                0, false);
+    set<int> uniqueStates;
+    for (Demonstration demo : lstdqDemonstrations)
+        for (Transition tr : demo)
+            uniqueStates.insert(tr.s);
+    cout << uniqueStates.size() << " unique states in "
+         << lstdqDemonstrations.size() << " demonstrations..." << endl;
+
+    // Evaluate programmatic optimal policy (LSTDQ)
+    // Find LSPI optimal policy and print weights
+    auto optWeights = LSTDQ::lstdq(lstdqDemonstrations, optimalPolicy, mdp);
+    cout.precision(numeric_limits<double>::digits10 - 12);
+    cout << "Optimal weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
+    for (double d : optWeights)
+        cout << fixed << d << "\t";
+    cout << endl;
+
+    // Evaluate random policy (LSTDQ)
+    auto ranWeights = LSTDQ::lstdq(lstdqDemonstrations, randomPolicy, mdp);
+    cout.precision(numeric_limits<double>::digits10 - 12);
+    cout << "Random weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
+    for (double d : ranWeights)
+        cout << fixed << d << "\t";
+    cout << endl;
+
+    double loss = BMT::loss(optWeights, ranWeights, uniqueStates,
+                            cmp, true); // sum?
+
+    // TODO: Save/read on file?
+    // Global set of reward functions
+    // Find rewards with some noise, for more variance... (SoftmaxPolicy)
+    cout << "Sampling " << N_REWARD_FUNCTIONS << " reward functions..." << endl;
+    // SoftmaxPolicy rewardPolicy(&cmp, lspiPolicy.getWeights(), 20.0);
+    mdp.gamma = 1.00;
+    vector<vector<double>> rewardFunctions;
+    for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
+    {
+        vector<Demonstration> rewardDemonstrations
+            = generateDemonstrations(mdp, { &randomPolicy } , -1,
+                    20, // Number of playouts
+                    0, // Initial state
+                    false); // Print
+        rewardFunctions.push_back(
+                sampleRewardFunctions(N_REWARD_FUNCTIONS,
+                                      N_Q_APPROXIMATION_PLAYOUTS,
+                                      T_Q_APPROXIMATION_HORIZON,
+                                      rewardDemonstrations,
+                                      randomPolicy,
+                                      // optimalPolicy,
+                                      mdp)[0]);
+                               // lspiPolicy, mdp);
+                               // rewardPolicy, mdp);
+    }
+    mdp.gamma = 1.00;
+    if (PRINT_DEBUG)
+    {
+        cout.precision(numeric_limits< double >::digits10 - 12);
+        cout << "\tSampled reward functions:" << endl;
+        int i = 0;
+        for (auto rf : rewardFunctions)
+        {
+            cout << "\t (" << i++ << ")\t";
+            for (auto r : rf)
+                cout << fixed << r << "\t";
+            cout << endl;
+        }
+    }
+
+    DeterministicPolicy lspiPolicy = LSTDQ::lspi(lstdqDemonstrations, mdp);
+    // TODO: Save/read on file?
+    // Global set of corresponding optimal policies
+    cout << "Creating " << N_REWARD_FUNCTIONS
+         << " corresponding optimal policies..." << endl;
+    vector<DeterministicPolicy> optimalPolicies;
+    for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
+    {
+        mutableMdp.setRewardWeights(rewardFunctions[i]);
+        optimalPolicies.push_back(LSTDQ::lspi(lstdqDemonstrations, mutableMdp,
+                                              true));
+    }
+    if (PRINT_DEBUG)
+    {
+        cout.precision(numeric_limits< double >::digits10 - 12);
+        cout << "\tTrue Optimal weights:" << endl;
+        cout << "\t\t";
+        for (auto w : lspiPolicy.getWeights())
+            cout << fixed << w << "\t";
+        cout << endl;
+        cout << "\tSampled reward functions' optimal policies' optimal weights:"
+             << endl;
+        int i = 0;
+        for (auto pi : optimalPolicies)
+        {
+            cout << "\t (" << i++ << ")\t";
+            for (auto w : pi.getWeights())
+                cout << fixed << w << "\t";
+            cout << endl;
+        }
+        // TODO: Think about this:
+        // Sampled reward functions losses w.r.t. true reward functions
+        // should here be a cap of how close we can get...
+    }
+
+    // Initializing our experts using programmatic optimum weights
+    /* NOTE: Assume that the experts have an unknown reward function that gives
+     * rise to these values. I.e. the optimal expert[0] has the same reward
+     * function as the real game (terminal rewards for win/loss), and the other
+     * experts may have a completely arbitrary reward function.
+     */
+    vector<SoftmaxPolicy> experts;
+    // Expert 0 is optimal
+    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[0]));
+    // Expert 1 misses information about Forks
+    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[1]));
+    experts.back().setWeight(TicTacToeCMP::FEATURE_FORKS_X, 0);
+    experts.back().setWeight(TicTacToeCMP::FEATURE_FORKS_O, 0);
+    // Expert 2 misses information about Singlets
+    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[2]));
+    experts.back().setWeight(TicTacToeCMP::FEATURE_SINGLETS_X, 0);
+    experts.back().setWeight(TicTacToeCMP::FEATURE_SINGLETS_O, 0);
+    // Expert 3 misses information about Doublets
+    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[3]));
+    experts.back().setWeight(TicTacToeCMP::FEATURE_DOUBLETS_X, 0);
+    experts.back().setWeight(TicTacToeCMP::FEATURE_DOUBLETS_O, 0);
+
+    // True expert losses w.r.t. true MDP
+    cout << "Calculating summed losses for each expert w.r.t. true MDP (rf),"
+         << " to be compared with \"final loss\" later:" << endl;
+    for (int i = 0; i < N_EXPERTS; ++i)
+    {
+        // auto expertWeights = LSTDQ::lstdq(lstdqDemonstrations, experts[i], mdp);
+        auto expertWeights = experts[i].getWeights();
+        double loss = BMT::loss(expertWeights, optWeights, uniqueStates,
+                                cmp, true); // sum?
+        cout << "\t" << loss << endl;
+    }
+
+    for (int iteration = 0; iteration < N_EXPERT_PLAYOUTS; ++iteration)
+    {
+        const int N_EXPERT_DEMONSTRATIONS = N_N_EXPERT_PLAYOUTS[iteration];
+
+        // Generate demonstrations
+        cout << "Generating " << N_EXPERTS << " expert demonstrations..." << endl;
+        vector<vector<Demonstration>> expertDemonstrations;
+        for (int i = 0; i < N_EXPERTS; ++i)
+        {
+            auto demonstrations
+                = generateDemonstrations(mdp, {&experts[i]},
+                                         -1, /* horizon = playout */
+                                         N_EXPERT_DEMONSTRATIONS,
+                                         0, /* initialState */
+                                         false); /* No print */
+            expertDemonstrations.push_back(demonstrations);
+        }
+
+        // TODO: Should perhaps be modified prior
+        // Initialize policy posteriors given expert data
+        cout << "Initializing " << N_EXPERTS << " policy posteriors..." << endl;
+        vector<DirichletPolicyPosterior> posteriorPolicies;
+        for (int i = 0; i < N_EXPERTS; ++i)
+        {
+            SoftmaxDirichletPrior policyPrior(9, &cmp);
+            posteriorPolicies.push_back(
+                DirichletPolicyPosterior(policyPrior, expertDemonstrations[i]));
+        }
+
+        // Sample K policies from the posterior of each expert
+        cout << "Sampling " << N_POLICY_SAMPLES << " policies from " << N_EXPERTS
+             << " experts..." << endl;
+        cout << "TESTING WITH 0th POLICY = TRUE EXPERT POLICY" << endl;
+        vector<vector<Policy*>> sampledPolicies(N_EXPERTS);
+        for (int i = 0; i < N_EXPERTS; i++)
+        {
+            sampledPolicies[i].push_back(&experts[i]);
+            for (int k = 0; k < N_POLICY_SAMPLES - 1; ++k)
+                sampledPolicies[i].push_back(&posteriorPolicies[i].samplePolicy());
+        }
+
+        // Initialize BMT calculations for each expert
+        cout << "Initializing " << N_EXPERTS << " BMT objects..." << endl;
+        vector<BMT> bmts;
+        for (int i = 0; i < N_EXPERTS; ++i)
+        {
+            // BMT bmt(mutableMdp, lstdqDemonstrations, rewardFunctions,
+            BMT bmt(mutableMdp, expertDemonstrations[i], rewardFunctions,
+                    optimalPolicies, sampledPolicies[i],
+                    EXPERT_OPTIMALITY_PRIORS[i]);
+            bmts.push_back(bmt);
+        }
+
+        /**
+          * Calculation of final loss...
+          */
+        vector<double> probabilityProducts(N_REWARD_FUNCTIONS, 1);
+        for (BMT& bmt : bmts)
+        {
+            vector<double> probabilities = bmt.getNormalizedRewardProbabilities();
+            for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
+                probabilityProducts[i] *= probabilities[i];
+        }
+        double pMax = -DBL_MAX;
+        int rMax = 0;
+        for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
+        {
+            if (probabilityProducts[i] > pMax)
+            {
+                pMax = probabilityProducts[i];
+                rMax = i;
+            }
+        }
+
+        // Get best policy via argmax rho product
+        mutableMdp.setRewardWeights(rewardFunctions[rMax]);
+        DeterministicPolicy bestPolicy = LSTDQ::lspi(lstdqDemonstrations,
+                                                     mutableMdp);
+
+        // Evaluate it in the real MDP
+        vector<double> bestPolicyTrueMDPWeights
+            = LSTDQ::lstdq(lstdqDemonstrations, bestPolicy, mdp);
+
+        double finalLoss = BMT::loss(bestPolicyTrueMDPWeights, optWeights,
+                                     uniqueStates, cmp, true); // sum
+        cout << "Final loss, approx pi* from rho_" << rMax
+             << " = argmax rho product evaluated in true MDP: " << endl << "\t"
+             << finalLoss
+             << endl;
+
+        if (true)
+        {
+            // Printing of loss matrices
+            for (int i = 0; i < N_EXPERTS; ++i)
+            {
+                BMT& bmt = bmts[i];
+                int K = N_POLICY_SAMPLES;
+                int N = N_REWARD_FUNCTIONS;
+                if (true) // loss matrix
+                {
+                    cout.precision(numeric_limits< double >::digits10 - 12);
+                    cout << "Loss matrix" << endl;
+                    for (int k = 0; k < K; ++k)
+                    {
+                        for (int j = 0; j < N; ++j)
+                        {
+                            cout << fixed << bmt.getLoss(k,j) << "\t";
+                        }
+                        cout << endl;
+                    }
+                }
+                cout.precision(numeric_limits< double >::digits10 - 12);
+                // cout << "Reward function probabilities (unnormalised):" << endl;
+                // for (int j = 0; j < N; ++j)
+                //     cout << fixed << bmt.getRewardProbability(j) << "\t";
+                vector<double> rewardProbabilities
+                    = bmt.getNormalizedRewardProbabilities();
+                cout << "Reward function probabilities:" << endl;
+                for (int rr = 0; rr < N_REWARD_FUNCTIONS; ++rr)
+                    cout << rr << "\t";
+                cout << endl;
+                for (auto rewardProb : rewardProbabilities)
+                    cout << fixed << rewardProb << "\t";
+                cout << endl;
+                cout << endl;
+            }
+        }
+    }
 }
 
 void test_BMT3()
@@ -346,7 +443,7 @@ void test_BMT3()
     ************************************************/
     const int    N_EXPERT_DEMO_HORIZONS   =        3;
     const int    T_EXPERT_DEMO_HORIZONS[] =
-                                      {1, 500, 1000}; // Max 5000 makes sense
+                                       {1, 100, 500}; // Max 5000 makes sense
     const int    N_EXPERT_DEMONSTRATIONS  =        1;
     const int    N_REWARD_FUNCTIONS       =       10;
     const int    N_POLICY_SAMPLES         =       10;
@@ -357,8 +454,9 @@ void test_BMT3()
                     //{0.50, 0.75, 1.00, 3.00, 3.50};
                     //{0.10, 0.15, 0.20, 1.00, 1.50};
     const double EXPERT_OPTIMALITY_PRIORS[]    =
-   /* ACTUALLY ALPHA IN GAMMA CDF */ {1, 1, 1, 5, 5};
+// /* ACTUALLY ALPHA IN GAMMA CDF */ {1, 1, 1, 5, 5};
                        //  {2.0, 2.0, 2.0, 0.5, 0.5};
+                           {1.0, 1.0, 1.0, 1.0, 1.0};
     /************************************************
      ************************************************/
     /************************************************
@@ -372,7 +470,7 @@ void test_BMT3()
      ************************************************/
 
     // MDP setup
-    const double gamma = 0.95;
+    const double gamma = 0.75;
     // const double gamma = 0.50;
     const int states = 8;
     const int actions = 3;
@@ -495,14 +593,12 @@ void test_BMT3()
         vector<vector<Demonstration>> expertDemonstrations;
         for (int i = 0; i < N_EXPERTS; ++i)
         {
-            // SoftmaxPolicy expert(&cmp, lspiPolicy.getWeights(),
-            //                      EXPERT_TEMPERATURES[i]);
-            // auto demonstrations = generateDemonstrations(mdp, {&expert},
-            auto demonstrations = generateDemonstrations(mdp, {&experts[i]},
-                                                         T_EXPERT_DEMO_HORIZON,
-                                                         N_EXPERT_DEMONSTRATIONS,
-                   /* initialState uniform random */     -1,
-                   /* Don't print demo generation */     false);
+            auto demonstrations
+                = generateDemonstrations(mdp, {&experts[i]},
+                                         T_EXPERT_DEMO_HORIZON,
+                                         N_EXPERT_DEMONSTRATIONS,
+                                         -1, /* initialState uniform random */
+                                         false); /* No print */
             expertDemonstrations.push_back(demonstrations);
         }
 
@@ -584,8 +680,6 @@ void test_BMT3()
         vector<double> bestPolicyTrueMDPWeights
             = LSTDQ::lstdq(lstdqDemonstrations, bestPolicy, mdp);
 
-        // double finalLoss = bmts[0].loss(bestPolicy.getWeights(),
-        //                                 lspiPolicy.getWeights());
         double finalLoss = BMT::loss(bestPolicyTrueMDPWeights, optimalWeights,
                                      uniqueStates, cmp, true); // sum
         cout << "Final loss, approx pi* from rho_" << rMax
@@ -632,6 +726,230 @@ void test_BMT3()
         }
     }
 }
+
+/*
+double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T);
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int action, int nPlayouts, int T);
+*/
+
+/*
+ * These methods only perform some playouts from an optimal policy to generate
+ * natural noise to the optimal values.
+ */
+/*
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T)
+{
+    // Assuming optimal policy is stationary.
+    int a = optimalPolicy.probabilities(state)[0].first;
+    return getExpectedOptimalReward(optimalPolicy, mdp, state, a, nPlayouts, T);
+}
+*/
+
+double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T);
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int action, int nPlayouts, int T)
+{
+    // // Assuming optimal policy is stationary.
+    // int a = optimalPolicy.probabilities(state)[0].first;
+    auto transitions = mdp.cmp->kernel->getTransitionProbabilities(state,
+                                                                   action);
+
+    // Q(s,a) where a = pi*(s)
+    double Qsa = 0;
+
+    double expectedVs2 = 0; // Expected V(s')
+    for (auto tr : transitions)
+    {
+        int s2 = tr.first;
+        double p = tr.second;
+        double Qs2a = getAverageOptimalUtility(optimalPolicy, mdp, s2,
+                                               transitions.size() * nPlayouts,
+                                               T);
+        double Qs2a2= getAverageOptimalUtility(optimalPolicy, mdp, s2,
+                                               nPlayouts, T);
+        Qsa += p * (mdp.getReward(s2) + mdp.gamma * Qs2a2);
+        expectedVs2 += p * Qs2a;
+    }
+
+    return (Qsa - mdp.gamma * expectedVs2); // Average reward by definition
+}
+
+double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T)
+{
+    vector<Demonstration> playouts
+        = generateDemonstrations(mdp, {&optimalPolicy}, T, nPlayouts, state,
+                                 false);
+    // Calculate discounted sum of rewards
+    double totalPayoff = 0;
+    for (Demonstration d : playouts)
+        for (int t = 0; t < d.size(); ++t)
+            totalPayoff += d[t].r * pow(mdp.gamma, t); // starts with ^0
+    return (totalPayoff / (double) nPlayouts);
+}
+
+vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
+                                             vector<Policy*> policies,
+                                             int demonstrationLength,
+                                             int nDemonstrations,
+                                             int initialState,
+                                             bool print)
+{
+    if (print)
+    {
+        cout << "Generating " << nDemonstrations << " demonstrations";
+        if (demonstrationLength > -1)
+            cout << " of length " << demonstrationLength;
+        cout << "..." << endl;
+    }
+
+    vector<Demonstration> demonstrations(nDemonstrations);
+
+    bool printTicTacToe = false;
+
+    for (int d = 0; d < nDemonstrations; ++d)
+    {
+        int currentState;
+        if (initialState == -1) // Uniform initial state dist
+            currentState = rand() % mdp.cmp->states;
+        else
+            currentState = initialState;
+        int previousState;
+
+        for (int t = 0;
+             (demonstrationLength < 0 || t < demonstrationLength)
+                 && !mdp.cmp->isTerminal(currentState);
+             ++t)
+        {
+            Policy& pi = *policies[t % policies.size()];
+            int action = sample(pi.probabilities(currentState));
+            previousState = currentState;
+            auto transitionProbabilities = 
+                mdp.cmp->kernel->getTransitionProbabilities(currentState,
+                                                            action);
+            currentState = sample(transitionProbabilities);
+
+            if (printTicTacToe) // print
+            {
+                ((TicTacToeCMP*)mdp.cmp)->printState(
+                    TicTacToeCMP::State(
+                        ((TicTacToeCMP*)mdp.cmp)->size, currentState));
+                cout << "isTerminal: " << mdp.cmp->isTerminal(currentState)
+                     << endl;
+                cout << "winner: " << 
+                    ((TicTacToeCMP*)mdp.cmp)->winner(
+                    TicTacToeCMP::State(
+                        ((TicTacToeCMP*)mdp.cmp)->size, currentState))
+                     << endl;
+            }
+
+            double reward = mdp.getReward(currentState);
+            demonstrations[d].push_back(Transition(previousState, action,
+                                                   currentState, reward));
+        }
+        if (printTicTacToe) // print
+            cout << endl << "-------------------------------------------------"
+                 << endl;
+    }
+
+    if (print)
+        cout << "Done!" << endl;
+    return demonstrations;
+}
+
+void test_generateTTT()
+{
+    TicTacToeTransitionKernel kernel = TicTacToeTransitionKernel(3);
+    TicTacToeCMP cmp(&kernel);
+    TicTacToeMDP mdp(&cmp, true); // True rewards
+    RandomTTTPolicy policyRandom(&cmp);
+    OptimalTTTPolicy policyOptimal(&cmp);
+    // vector<Policy*> policies = {&policyRandom, &policyOptimal};
+    vector<Policy*> policies = { &policyRandom };
+    vector<Demonstration> demonstrations
+        = generateDemonstrations(mdp, policies, -1, 10, 0);
+
+    // vector<double> optWeights(cmp.nFeatures());
+    auto optWeights = LSTDQ::lstdq(demonstrations, policyOptimal, mdp);
+    cout.precision(numeric_limits<double>::digits10 - 12);
+    cout << "Optimal weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
+    for (double d : optWeights)
+        cout << fixed << d << "\t";
+    cout << endl;
+    cout << "LSPI weights: " << endl;
+    DeterministicPolicy lspiPolicy = LSTDQ::lspi(demonstrations, mdp);
+    auto lspiWeights = lspiPolicy.getWeights();
+    for (double d : lspiWeights)
+        cout << fixed << d << "\t";
+    cout << endl;
+
+    const int maxPrints = 0;
+    int prints = 0;
+    for (Demonstration d : demonstrations)
+    {
+        if (++prints > maxPrints)
+            break;
+        /*
+        for (Transition tr : d)
+        {
+            int s = tr.s;
+            cmp.printState(TicTacToeCMP::State(cmp.size, s));
+        }
+        */
+        int s = d.back().s;
+        cmp.printState(TicTacToeCMP::State(cmp.size, s));
+        auto phi = cmp.features(s);
+        cout << "Value X(s,d,t,x,c,f) O(s,d,t,x,c,f) = " << endl << "\t";
+        for (double f : phi)
+            cout << fixed << f << "\t";
+        cout << endl << " *\t";
+        double q = std::inner_product(phi.begin(), phi.end(),
+                                      optWeights.begin(), 0.0);
+        for (double d : optWeights)
+            cout << fixed << d << "\t";
+        cout << endl;
+        cout << " =\t" << q << endl;
+    }
+    // cout << "Global count: " << globalCount << endl;
+    // cout << "Global count2: " << globalCount2 << endl;
+}
+
+vector<Demonstration> generateSoftmaxDemonstrations(RandomMDP& mdp,
+                                                    int demonstrationLength,
+                                                    SoftmaxPolicy& pi)
+{
+    const int nDemonstrations = 1;
+    // const int demonstrationLength = 1000;
+    vector<Demonstration> demonstrations(nDemonstrations,
+                                         Demonstration(demonstrationLength,
+                                                       Transition()));
+
+    for (int d = 0; d < nDemonstrations; ++d)
+    {
+        int currentState = rand() % mdp.cmp->states; // Uniform initial state dist
+        int previousState;
+
+        for (int t = 0; t < demonstrationLength; ++t)
+        {
+            int action = sample(pi.probabilities(currentState));
+            previousState = currentState;
+            auto transitionProbabilities = 
+                mdp.cmp->kernel->getTransitionProbabilities(currentState,
+                                                            action);
+            currentState = sample(transitionProbabilities);
+            double reward = mdp.getReward(currentState); // Deterministic state rewards
+            demonstrations[d][t] = Transition(previousState, action,
+                                              currentState, reward);
+        }
+    }
+
+    return demonstrations;
+}
+
 
 /*
 void test_BMT2()
