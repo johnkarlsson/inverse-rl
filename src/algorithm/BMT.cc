@@ -15,12 +15,13 @@ using std::inner_product;
 
 
 
-BMT::BMT( FeatureMDP _mdp, vector<Demonstration>& _lstdqDemonstrations,
+BMT::BMT( FeatureMDP _mdp,
+          vector<Demonstration>& _lstdqDemonstrations,
           vector<vector<double>> const & _rewardFunctions,
           vector<DeterministicPolicy> const & optimalPolicies,
-          vector<Policy*> const & policies,
-          double _c)
-    : K(policies.size()), N(_rewardFunctions.size()),
+          vector<Policy*> const & sampledPolicies,
+          double _c, bool withModel, bool sum)
+    : K(sampledPolicies.size()), N(_rewardFunctions.size()),
       mdp(_mdp), rewardFunctions(_rewardFunctions),
       lstdqDemonstrations(_lstdqDemonstrations),
       c(_c)
@@ -38,11 +39,16 @@ BMT::BMT( FeatureMDP _mdp, vector<Demonstration>& _lstdqDemonstrations,
         for (int k = 0; k < K; ++k)
         {
             vector<double> weightsEval = LSTDQ::lstdq(lstdqDemonstrations,
-                                                      *policies[k], mdp);
+                                                      *sampledPolicies[k], mdp,
+                                                      withModel);
             policyRewardLoss[k][j] = loss(weightsEval, weightsOpt,
-                                          states, *mdp.cmp);
+                                          states, *mdp.cmp, sum);
         }
     }
+
+    // for (auto v : policyRewardLoss)
+    //     for (auto loss : v)
+    //         sortedLosses.insert(loss);
 
     for (auto v : policyRewardLoss)
         for (auto loss : v)
@@ -66,9 +72,10 @@ vector<double> BMT::getNormalizedRewardProbabilities()
 }
 
 double BMT::loss(vector<double> const & weightsEval,
-                 vector<double> const & weightsOpt)
+                 vector<double> const & weightsOpt,
+                 bool calculateSum)
 {
-    return BMT::loss(weightsEval, weightsOpt, states, *mdp.cmp, true);
+    return BMT::loss(weightsEval, weightsOpt, states, *mdp.cmp, calculateSum);
 }
 
 double BMT::loss(vector<double> const & wEval,
@@ -87,14 +94,14 @@ double BMT::loss(vector<double> const & wEval,
         double vEval = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
         double diff = fabs(vOpt - vEval);
         if (calculateSum)
-            sum += diff;
+            sum += diff * diff;
         else
             if (diff > sup)
                 sup = diff;
     }
 
     if (calculateSum)
-        return sum;
+        return sqrt(sum / (double) states.size());
     else
         return sup;
 }
@@ -118,20 +125,25 @@ double BMT::getRewardProbability(int rewardFunction) // Psi(B | ep, pi)
     double probabilitySum = 0.0;
 
     for (int k = 0; k < K; ++k)
-        for (int i = 0; i < sortedLosses.size() - 1; ++i)
+    {
+        for (int i = 0; i < sortedLosses.size(); ++i)
         {
-            double ep_lower = sortedLosses[i];
-            double ep_upper = sortedLosses[i+1];
-            if (getLoss(k, j) <= ep_lower)
+            double ep = sortedLosses[i];
+            double ep_upper = (i == sortedLosses.size() - 1)
+                                ? DBL_MAX : sortedLosses[i+1];
+            // a rho that is ep-optimal is also ep_upper-optimal
+
+            if (getLoss(k, j) <= ep)
             {
                 int nEpOptimalRewardFunctions = 0;
                 for (int l = 0; l < N; ++l)
-                    if (getLoss(k,l) <= ep_lower)
+                    if (getLoss(k,l) <= ep)
                         ++nEpOptimalRewardFunctions;
-                probabilitySum += beta(ep_lower, ep_upper)
+                probabilitySum += beta(ep, ep_upper)
                                     / (double) nEpOptimalRewardFunctions;
             }
         }
+    }
 
     return probabilitySum;
 }

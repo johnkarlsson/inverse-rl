@@ -19,9 +19,11 @@ class BMT
              vector<vector<double>> const & rewardFunctions,
              vector<DeterministicPolicy> const & optimalPolicies,
              vector<Policy*> const & policies,
-             double _c);
+             double _c, bool withModel = true,
+             bool sum = false);
         double loss(vector<double> const & weightsEval,
-                    vector<double> const & weightsOpt);
+                    vector<double> const & weightsOpt,
+                    bool calculateSum = false);
         static double loss(vector<double> const & weightsEval,
                            vector<double> const & weightsOpt,
                            set<int> const & states, DiscreteCMP const & cmp,
@@ -43,6 +45,7 @@ class BMT
         const int N;
         vector<vector<double>> policyRewardLoss;
         vector<double> sortedLosses;
+        // set<double> sortedLosses;
         FeatureMDP mdp;
         vector<vector<double>> const & rewardFunctions;
         vector<Demonstration> const & lstdqDemonstrations;

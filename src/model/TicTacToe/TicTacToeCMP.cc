@@ -286,7 +286,34 @@ int TicTacToeCMP::nFeatures() const
     // TODO: Add bias (1) feature ?
 }
 
-std::vector<double> TicTacToeCMP::features(const State& s) const
+/*
+ * 85% increase (ontopof features(s) optimization)
+ */
+static std::vector<double> memoized_action_features[1 << (9*2 + 3)];
+std::vector<double> TicTacToeCMP::features(int s, int a) const
+{
+    int ai = a << (9*2);
+    int mi = s + ai;
+    if (memoized_action_features[mi].size() == 0)
+        memoized_action_features[mi] = DiscreteCMP::features(s,a);
+    return memoized_action_features[mi];
+}
+
+/*
+ * 21% increase
+ */
+static std::vector<double> memoized_features[1 << (9*2)]; // hardcoded 3x3 board
+// std::vector<double> TicTacToeCMP::features(const State& state) const
+std::vector<double> TicTacToeCMP::features(int s) const
+{
+    // int s = state.getState();
+    if (memoized_features[s].size() == 0)
+        memoized_features[s] = _features(TicTacToeCMP::State(size, s));
+        // memoized_features[s] = _features(state);
+    return memoized_features[s];
+}
+
+std::vector<double> TicTacToeCMP::_features(const State& s) const
 {
 
     const int _nFeatures = nFeatures();
@@ -313,12 +340,6 @@ std::vector<double> TicTacToeCMP::features(const State& s) const
         phi[i++] = (nlets(s, 2, player, false) - nlets(s, 2, player, true)) / 2;
     }
 
-
-    // raw board
-    // for (int k = 0; k < size; ++k)
-    //     for (int l = 0; l < size; ++l)
-    //         phi[i++] = s.getPoint(k, l);
-
     // center occupation
     int c = (int)(s.size/2);
     switch (s.getPoint(c,c))
@@ -327,6 +348,11 @@ std::vector<double> TicTacToeCMP::features(const State& s) const
         case 1: phi[i++] = 1; break;
         case 2: phi[i++] =-1; break;
     }
+
+    // raw board
+    // for (int k = 0; k < size; ++k)
+    //     for (int l = 0; l < size; ++l)
+    //         phi[i++] = s.getPoint(k, l);
 
     return phi;
 }

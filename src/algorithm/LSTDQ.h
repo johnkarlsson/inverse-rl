@@ -34,16 +34,17 @@ class LSTDQ
                                     vector<double>& phi, vector<double>& td,
                                     vector<double>& b);
         static vector<double> lstdq(vector<Demonstration> const & D, Policy& pi,
-                                    DiscreteMDP const & mdp);
+                                    DiscreteMDP const & mdp,
+                                    bool withModel = true);
         static DeterministicPolicy lspi(vector<Demonstration> const & D,
                                         DiscreteMDP const & mdp,
                                         vector<double> const & initialWeights,
                                         bool print = true,
-                                        double epsilon = 1e-6);
+                                        double epsilon = 1e-7);
         static DeterministicPolicy lspi(vector<Demonstration> const & D,
                                         DiscreteMDP const & mdp,
                                         bool print = true,
-                                        double epsilon = 1e-6);
+                                        double epsilon = 1e-7);
 };
 
 inline double r() { return ((double) rand() / (double) RAND_MAX); }

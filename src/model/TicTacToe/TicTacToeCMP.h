@@ -111,12 +111,18 @@ class TicTacToeCMP
         State currentState;
 
         using DiscreteCMP::features;
-        std::vector<double> features(const State& s) const;
+
+        // std::vector<double> features(const State& s) const;
+        std::vector<double> features(const State& s) const
+        { return features(s.getState()); }
+        std::vector<double> features(int s) const;
         // std::vector<double> features() const { return features(currentState); };
         std::vector<double> features() const
         { throw std::runtime_error("features() unsupported."); };
-        std::vector<double> features(int s) const
-        { return features(TicTacToeCMP::State(size, s)); };
+        // std::vector<double> features(int s) const
+        // { return features(TicTacToeCMP::State(size, s)); };
+
+        std::vector<double> features(int s, int a) const;
 
         int nFeatures() const;
 
@@ -147,11 +153,15 @@ class TicTacToeCMP
         static const int     FEATURE_CORNERS_O = 10;
         static const int       FEATURE_FORKS_O = 11;
 
-        static const int FEATURE_RAW           = 12;
+        static const int        FEATURE_CENTER = 12;
+
+        static const int           FEATURE_RAW = 13;
         /******************************************/
 
         const int size;
         const int actions;
+    private:
+        std::vector<double> _features(const State& s) const;
 };
 
 int nlets(const TicTacToeCMP::State& s, int n, int player,

@@ -42,7 +42,6 @@ vector<pair<int,double>>
     for (int a = 0; a < parent->actions; ++a)
         if (multinomial[a] > 0)
             output.push_back({a, multinomial[a]});
-
     return output;
 }
 

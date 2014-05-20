@@ -49,7 +49,7 @@ class SoftmaxDirichletPrior
                 if (validActions.find(a) == validActions.end())
                     return 0;
             }
-            return 0.01;
+            return 1;//0.01;
         }
     private:
         DiscreteCMP const * cmp;

@@ -1,0 +1,197 @@
+Generating LSTDQ demonstrations...
+2154 unique states in 5000 demonstrations...
+Optimal weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : 
+0.153	0.230	0.915	-0.018	0.092	0.204	0.138	-0.228	-1.362	-0.170	0.105	-0.505	0.029	
+Random weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : 
+0.039	0.294	1.022	0.009	0.046	0.224	-0.149	-0.285	-1.104	-0.083	0.092	-0.424	0.003	
+Sampling 20 reward functions...
+	Sampled reward functions:
+	 (0)	0.095	0.560	1.504	-0.292	-0.210	-1.653	-0.031	-0.162	-1.152	0.118	0.016	-0.848	-0.267	
+	 (1)	-0.081	0.583	1.030	-0.025	0.005	-0.293	0.020	-0.880	-1.853	0.006	0.264	0.610	-0.310	
+	 (2)	-0.047	-0.108	0.789	0.264	0.088	0.314	0.035	-0.322	-1.013	0.040	-0.013	1.959	0.199	
+	 (3)	0.074	0.387	1.060	0.226	-0.244	-0.797	0.037	-0.350	-0.659	-0.229	0.039	0.967	-0.114	
+	 (4)	-0.203	-0.277	0.691	-0.109	0.258	-0.972	0.126	0.536	-0.298	-0.215	-0.318	3.053	0.551	
+	 (5)	-0.322	-0.114	1.461	0.469	0.034	-0.822	0.301	0.176	-0.828	-0.269	-0.062	-0.220	0.296	
+	 (6)	0.008	0.126	1.214	0.277	-0.127	1.060	0.001	-0.273	-0.951	-0.031	0.024	0.166	0.012	
+	 (7)	0.005	-0.059	1.048	-0.093	0.043	0.247	-0.001	0.108	-0.866	0.381	-0.070	-0.957	0.001	
+	 (8)	-0.091	-0.421	1.483	0.100	0.044	0.791	0.096	0.096	-0.304	0.235	-0.202	1.071	0.356	
+	 (9)	-0.198	-0.285	0.533	-0.233	0.371	0.447	0.131	0.688	0.164	0.421	-0.591	-0.014	0.623	
+	 (10)	0.134	0.106	1.094	-0.277	0.008	-0.645	-0.089	-0.117	-0.982	0.045	-0.054	0.293	-0.076	
+	 (11)	-0.184	-0.022	1.499	0.613	-0.187	-1.244	0.069	-0.275	-0.936	-0.104	0.146	1.587	-0.114	
+	 (12)	0.055	-0.320	1.261	-0.333	-0.019	0.691	-0.135	0.284	-0.722	0.418	0.036	1.290	-0.041	
+	 (13)	-0.130	-0.231	1.142	0.105	0.143	1.220	0.162	-0.146	-0.234	-0.026	-0.277	1.845	0.345	
+	 (14)	0.150	0.523	1.492	0.131	-0.238	-0.569	-0.132	-0.492	-0.921	0.002	0.016	2.923	-0.096	
+	 (15)	0.198	0.100	1.413	0.142	-0.196	-0.459	-0.094	-0.163	-0.549	-0.316	0.040	1.848	0.047	
+	 (16)	0.044	-0.222	1.256	0.094	0.014	1.443	-0.044	0.039	-0.658	0.044	-0.066	-0.371	0.187	
+	 (17)	-0.134	0.109	1.395	0.051	-0.011	0.480	0.109	-0.269	-0.852	-0.084	0.014	0.202	0.058	
+	 (18)	0.619	0.165	1.390	-0.589	-0.217	0.216	-0.550	-0.585	-0.990	0.505	0.306	3.943	-0.095	
+	 (19)	-0.234	0.039	1.495	-0.090	0.034	0.039	0.242	0.347	-0.652	0.000	-0.251	2.232	0.182	
+LSPI converged after 5 iterations in 3.160 seconds.
+Creating 20 corresponding optimal policies...
+LSPI converged after 5 iterations in 3.410 seconds.
+LSPI converged after 5 iterations in 3.440 seconds.
+LSPI converged after 6 iterations in 3.990 seconds.
+LSPI converged after 5 iterations in 3.410 seconds.
+LSPI converged after 4 iterations in 2.840 seconds.
+LSPI converged after 4 iterations in 2.850 seconds.
+LSPI converged after 4 iterations in 2.840 seconds.
+LSPI converged after 5 iterations in 3.410 seconds.
+LSPI converged after 4 iterations in 2.830 seconds.
+LSPI converged after 5 iterations in 3.410 seconds.
+LSPI converged after 5 iterations in 3.410 seconds.
+LSPI converged after 5 iterations in 3.410 seconds.
+LSPI converged after 4 iterations in 2.830 seconds.
+LSPI converged after 5 iterations in 3.480 seconds.
+LSPI converged after 5 iterations in 3.440 seconds.
+LSPI converged after 5 iterations in 3.430 seconds.
+LSPI converged after 6 iterations in 4.020 seconds.
+LSPI converged after 5 iterations in 3.420 seconds.
+LSPI converged after 5 iterations in 3.410 seconds.
+LSPI converged after 5 iterations in 3.430 seconds.
+Calculating corresponding average win rates (vs. random)...
+	True { score } and optimal weights:
+	{ 0.969 }	0.194	0.283	0.909	-0.028	0.088	0.317	0.333	-0.208	-1.514	-0.363	0.114	-0.773	0.019	
+	{ -0.130 }	 (random)
+	{ -0.114 }	 (random random)
+	{ score } and optimal weights of the optimal policies (from sampled reward functions):
+ (0)	{ 0.498 }	0.266	0.893	1.477	-0.540	-0.230	-1.337	0.481	-0.388	-1.861	-0.503	0.159	-1.478	-0.436	
+ (1)	{ 0.878 }	0.452	0.986	0.485	-0.195	0.118	-0.231	0.567	-1.261	-3.334	-0.849	0.702	-1.102	-0.592	
+ (2)	{ 0.903 }	0.389	0.038	0.338	0.056	0.248	0.711	0.321	-0.606	-1.736	-0.483	0.149	0.317	0.314	
+ (3)	{ 0.717 }	0.304	0.599	1.144	-0.026	-0.341	-0.557	0.276	-0.527	-0.969	-0.584	0.120	0.300	-0.124	
+ (4)	{ 0.722 }	-0.008	-0.199	0.182	-0.147	0.549	-0.142	0.439	0.374	-0.825	-0.290	-0.337	1.516	0.876	
+ (5)	{ 0.765 }	0.012	0.211	1.016	0.222	0.173	-0.300	0.902	-0.117	-1.782	-0.989	0.119	-1.359	0.469	
+ (6)	{ 0.877 }	0.386	0.487	1.052	0.215	-0.108	1.204	0.427	-0.625	-1.641	-0.696	0.151	-0.907	0.069	
+ (7)	{ 0.865 }	0.180	0.206	0.798	-0.212	0.159	0.239	0.593	-0.068	-1.634	-0.264	0.025	-1.928	-0.019	
+ (8)	{ 0.870 }	0.106	-0.010	1.176	0.059	0.176	0.992	0.579	-0.070	-0.964	-0.298	-0.171	-0.097	0.592	
+ (9)	{ 0.671 }	0.042	-0.157	0.111	-0.143	0.767	0.974	0.747	0.536	-0.205	-0.233	-0.871	-1.097	1.026	
+ (10)	{ 0.930 }	0.362	0.410	0.858	-0.393	0.113	-0.323	0.091	-0.388	-1.622	-0.241	0.070	-0.569	-0.153	
+ (11)	{ 0.695 }	0.061	0.372	1.323	0.363	-0.228	-0.865	0.242	-0.437	-1.693	-0.273	0.400	0.557	-0.199	
+ (12)	{ 0.516 }	0.105	0.051	1.005	-0.315	0.031	0.525	0.579	0.112	-1.721	-0.129	0.250	0.044	-0.108	
+ (13)	{ 0.905 }	0.244	0.113	0.769	0.110	0.381	1.591	0.586	-0.398	-0.840	-0.652	-0.336	0.416	0.589	
+ (14)	{ 0.927 }	0.452	0.856	1.448	-0.058	-0.288	-0.196	0.164	-0.671	-1.485	-0.324	0.137	1.481	-0.097	
+ (15)	{ 0.922 }	0.655	0.383	1.276	-0.266	-0.228	-0.040	0.207	-0.448	-1.213	-0.647	0.210	0.868	0.131	
+ (16)	{ 0.922 }	0.486	0.167	0.905	0.036	0.152	1.666	0.401	-0.345	-1.496	-0.596	0.047	-1.379	0.321	
+ (17)	{ 0.844 }	0.184	0.587	1.035	0.098	0.087	0.681	0.591	-0.575	-1.819	-0.764	0.208	-0.921	0.090	
+ (18)	{ 0.916 }	1.291	0.411	1.087	-1.185	-0.318	0.458	-0.130	-0.771	-2.102	0.135	0.713	2.134	-0.105	
+ (19)	{ 0.630 }	-0.043	0.407	1.254	-0.110	0.182	0.337	1.016	0.146	-1.474	-0.621	-0.246	0.535	0.312	
+Scores for the experts true policies:
+	{ 0.946 }	 (expert 0)
+	{ 0.945 }	 (expert 1)
+	{ 0.948 }	 (expert 2)
+	{ 0.650 }	 (expert 3)
+Summed loss of reward-optimal policies w.r.t. true rho values (expert weights)
+	0.592	1.158	0.506	0.418	0.602	0.720	0.585	0.629	0.496	0.857	0.202	0.424	0.707	0.693	0.441	0.525	0.748	0.668	1.097	0.898	
+	0.619	1.221	0.512	0.395	0.559	0.778	0.649	0.696	0.525	0.899	0.223	0.366	0.687	0.716	0.409	0.473	0.810	0.732	1.064	0.878	
+	0.729	1.470	0.798	0.478	0.823	1.031	0.866	0.934	0.795	1.114	0.393	0.627	1.023	0.945	0.697	0.762	1.043	0.979	1.408	1.230	
+	0.638	1.239	0.548	0.416	0.600	0.785	0.682	0.707	0.560	0.922	0.258	0.389	0.721	0.768	0.504	0.500	0.823	0.769	1.104	0.932	
+Generating 4 expert demonstrations...
+Initializing 4 policy posteriors...
+Sampling 10 policies from 4 experts...
+TESTING WITH 0th POLICY = TRUE EXPERT POLICY
+Initializing 4 BMT objects...
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.003	0.004	0.003	0.006	0.017	0.004	0.001	0.059	0.002	0.000	0.846	0.007	0.027	0.000	0.005	0.002	0.000	0.012	0.004	0.001	
+LSPI converged after 5 iterations in 3.430 seconds.
+ARGMAX RHO(10) LOSS: 0.202
+MEAN LOSS: 0.270
+MEAN RF POLICY* IN MDP_m: 0.177
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.005	0.014	0.001	0.006	0.000	0.000	0.003	0.097	0.002	0.000	0.849	0.001	0.009	0.000	0.003	0.000	0.001	0.007	0.000	0.000	
+LSPI converged after 4 iterations in 2.840 seconds.
+ARGMAX RHO(10) LOSS: 0.223
+MEAN LOSS: 0.298
+MEAN RF POLICY* IN MDP_m: 0.228
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.002	0.001	0.004	0.018	0.005	0.002	0.001	0.023	0.001	0.000	0.932	0.005	0.001	0.000	0.003	0.000	0.000	0.002	0.000	0.000	
+LSPI converged after 5 iterations in 3.420 seconds.
+ARGMAX RHO(10) LOSS: 0.393
+MEAN LOSS: 0.419
+MEAN RF POLICY* IN MDP_m: 0.393
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.010	0.004	0.001	0.004	0.002	0.001	0.000	0.033	0.000	0.000	0.917	0.022	0.003	0.000	0.001	0.000	0.000	0.002	0.000	0.000	
+LSPI converged after 5 iterations in 3.500 seconds.
+ARGMAX RHO(10) LOSS: 0.258
+MEAN LOSS: 0.289
+MEAN RF POLICY* IN MDP_m: 0.255
+
+Generating 4 expert demonstrations...
+Initializing 4 policy posteriors...
+Sampling 10 policies from 4 experts...
+TESTING WITH 0th POLICY = TRUE EXPERT POLICY
+Initializing 4 BMT objects...
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.008	0.002	0.003	0.010	0.036	0.004	0.002	0.072	0.005	0.000	0.739	0.007	0.087	0.001	0.005	0.001	0.001	0.015	0.000	0.004	
+LSPI converged after 5 iterations in 3.480 seconds.
+ARGMAX RHO(10) LOSS: 0.202
+MEAN LOSS: 0.316
+MEAN RF POLICY* IN MDP_m: 0.166
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.042	0.003	0.001	0.019	0.001	0.001	0.002	0.115	0.001	0.000	0.786	0.006	0.010	0.000	0.004	0.000	0.001	0.005	0.000	0.002	
+LSPI converged after 4 iterations in 2.900 seconds.
+ARGMAX RHO(10) LOSS: 0.223
+MEAN LOSS: 0.314
+MEAN RF POLICY* IN MDP_m: 0.231
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.024	0.001	0.003	0.090	0.001	0.004	0.003	0.054	0.003	0.000	0.773	0.013	0.005	0.000	0.014	0.002	0.001	0.008	0.000	0.002	
+LSPI converged after 5 iterations in 3.430 seconds.
+ARGMAX RHO(10) LOSS: 0.393
+MEAN LOSS: 0.464
+MEAN RF POLICY* IN MDP_m: 0.388
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.001	0.000	0.002	0.059	0.005	0.002	0.001	0.021	0.004	0.000	0.882	0.010	0.002	0.000	0.005	0.003	0.001	0.001	0.000	0.000	
+LSPI converged after 5 iterations in 3.440 seconds.
+ARGMAX RHO(10) LOSS: 0.258
+MEAN LOSS: 0.288
+MEAN RF POLICY* IN MDP_m: 0.244
+
+Generating 4 expert demonstrations...
+Initializing 4 policy posteriors...
+Sampling 10 policies from 4 experts...
+TESTING WITH 0th POLICY = TRUE EXPERT POLICY
+Initializing 4 BMT objects...
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.016	0.001	0.003	0.009	0.049	0.005	0.001	0.071	0.006	0.000	0.673	0.011	0.131	0.000	0.010	0.001	0.001	0.009	0.000	0.004	
+LSPI converged after 5 iterations in 3.830 seconds.
+ARGMAX RHO(10) LOSS: 0.202
+MEAN LOSS: 0.345
+MEAN RF POLICY* IN MDP_m: 0.168
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.041	0.001	0.002	0.017	0.002	0.003	0.002	0.144	0.004	0.000	0.737	0.007	0.019	0.001	0.005	0.001	0.001	0.008	0.000	0.005	
+LSPI converged after 5 iterations in 3.740 seconds.
+ARGMAX RHO(10) LOSS: 0.223
+MEAN LOSS: 0.336
+MEAN RF POLICY* IN MDP_m: 0.233
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.021	0.000	0.004	0.101	0.004	0.010	0.004	0.063	0.010	0.000	0.720	0.025	0.006	0.001	0.014	0.003	0.002	0.008	0.000	0.004	
+LSPI converged after 5 iterations in 3.810 seconds.
+ARGMAX RHO(10) LOSS: 0.393
+MEAN LOSS: 0.484
+MEAN RF POLICY* IN MDP_m: 0.387
+
+Reward function probabilities:
+0	1	2	3	4	5	6	7	8	9	10	11	12	13	14	15	16	17	18	19	
+0.002	0.000	0.003	0.033	0.010	0.003	0.001	0.035	0.004	0.000	0.884	0.006	0.006	0.001	0.004	0.002	0.001	0.003	0.000	0.001	
+LSPI converged after 4 iterations in 3.130 seconds.
+ARGMAX RHO(10) LOSS: 0.258
+MEAN LOSS: 0.297
+MEAN RF POLICY* IN MDP_m: 0.247
+

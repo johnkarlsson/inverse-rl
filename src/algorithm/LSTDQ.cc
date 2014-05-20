@@ -2,6 +2,8 @@
 #include "../model/Policy.h"
 #include "../model/DiscreteMDP.h"
 
+#include <ctime>
+
 Transition::Transition(int _s, int _a, int _s2, double _r)
     : s(_s), a(_a), s2(_s2), r(_r)
 {}
@@ -72,15 +74,13 @@ vector<double> LSTDQ::solve(int nFeatures, int nSamples,
 }
 
 vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
-                            DiscreteMDP const & mdp)
+                            DiscreteMDP const & mdp, bool withModel)
 {
     int n = 0;
     for (auto d : D)
         n += d.size();
     const int k = mdp.cmp->nFeatures();
     const double gamma = mdp.gamma;
-
-    // cout << "lstdq()" << endl;
 
     vector<double> phi(k*n);
     vector<double> td(n*k);
@@ -95,19 +95,23 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
 
             // The "with a model" version of LSTDQ below assumes there are
             // successor states to iterate over, so we ignore terminal states.
-            // if (mdp.cmp->isTerminal(T.s)) // However not occurring in practice
-            //     continue;
+            if (mdp.cmp->isTerminal(T.s)) // However not occurring in practice
+                continue;
 
             vector<double> features = mdp.cmp->features(T.s, T.a);
 
-            // Get transition probabilities to create averages instead of
-            // relying on data.
-            auto transitions = mdp.cmp->kernel->getTransitionProbabilities(T.s,
-                                                                           T.a);
+            vector<pair<int,double>> transitions;
+            if (withModel)
+                // Transitions are given by the model and averaged over.
+                transitions
+                    = mdp.cmp->kernel->getTransitionProbabilities(T.s, T.a);
+            else
+                // Just one sample from the data
+                transitions = {{T.s2, 1}};
 
             /*
-             *  Average phi(s2, pi(s2)) and R(s2) over transition probabilities,
-             *  ("with a model"-version).
+             *  Average featuresPi = phi(s2, pi(s2)) and R(s2) over transition
+             *  probabilities ("with a model"-version).
              */
             vector<double> featuresPi(k, 0); // Avg.
             double reward = 0; // Avg.
@@ -171,6 +175,8 @@ DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
 {
     assert(initialWeights.size() == mdp.cmp->nFeatures());
 
+    clock_t t = clock();
+
     DeterministicPolicy pi(mdp.cmp, initialWeights);
 
     const int MAX_ITERATIONS = 100;
@@ -186,10 +192,14 @@ DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
         if (done)
             break;
     }
-    if (i == MAX_ITERATIONS)
-        cout << "LSPI ended after MAX_ITERATIONS = " << MAX_ITERATIONS << endl;
+    if (i == MAX_ITERATIONS) // print regardless of print bool
+        cout << "LSPI ended after MAX_ITERATIONS = " << MAX_ITERATIONS;
     else if (print)
-        cout << "LSPI converged after " << i << " iterations" << endl;
+        cout << "LSPI converged after " << i << " iterations";
+
+    float seconds = ((float)(clock() - t))/CLOCKS_PER_SEC;
+    if (print)
+        cout << " in " << seconds << " seconds." << endl;
 
     return pi;
 }

@@ -20,12 +20,15 @@
 #include "algorithm/ValueIteration.h"
 #include <cmath>
 #include <iterator>
+#include <algorithm>
 #include <vector>
 #include <set>
 #include <sstream>
 #include <cfloat>
 #include <limits>
 #include <chrono>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 using namespace std;
 
@@ -62,6 +65,8 @@ vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
 void test_generateTTT();
 void test_BMT3();
 void test_BMT4();
+double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int nPlayouts, int T);
 
 vector<double> wGlobal;
 
@@ -131,16 +136,18 @@ void test_BMT4()
     /************************************************
     * * * * * * * * * Main parameters * * * * * * * *
     ************************************************/
-    const int    N_EXPERT_PLAYOUTS        =        2;
-    const int    N_N_EXPERT_PLAYOUTS[]    =
-                                         {1, 100000};
-    const int    N_REWARD_FUNCTIONS       =       10;
-    const int    N_POLICY_SAMPLES         =       10;
+    const int    N_EXPERT_PLAYOUTS        =        13;
+    // const int    N_EXPERT_PLAYOUTS        =        1;
+    const int    N_N_EXPERT_PLAYOUTS[N_EXPERT_PLAYOUTS]
+         // = {5000};
+         = {50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 1000, 2000, 5000};
+    const int    N_REWARD_FUNCTIONS       =       50;
+    const int    N_POLICY_SAMPLES         =       20;
     const int    N_EXPERTS                =        4;
-    const double EXPERT_TEMPERATURES[]    =
-                          {0.0001, 0.01, 0.01, 0.01};
-    const double EXPERT_OPTIMALITY_PRIORS[]    =
-                                {1.0, 1.0, 1.0, 1.0};
+    const double EXPERT_TEMPERATURES[N_EXPERTS]
+                          = {0.20, 0.01, 0.10, 0.30};
+    const double EXPERT_OPTIMALITY_PRIORS[N_EXPERTS]
+                              = {1.0, 5.0, 3.0, 0.5};
     /************************************************
      ************************************************/
     /************************************************
@@ -153,20 +160,21 @@ void test_BMT4()
      ************************************************/
 
     // MDP setup
-    const double gamma = 1;
+    // const double gamma = 1;
     TicTacToeTransitionKernel kernel = TicTacToeTransitionKernel(3);
     TicTacToeCMP cmp(&kernel);
     TicTacToeMDP mdp(&cmp, true); // True rewards
-    TicTacToeMDP mutableMdp(&cmp, false); // True rewards
-    RandomTTTPolicy randomPolicy(&cmp, false);
+    TicTacToeMDP mutableMdp(&cmp, false); // Feature rewards
+    RandomTTTPolicy randomPolicy(&cmp, true); // Optimal terminal play
+    RandomTTTPolicy randomRandomPolicy(&cmp, false); // Random terminal play
     OptimalTTTPolicy optimalPolicy(&cmp);
 
     // Demonstrations for LSTDQ only
     cout << "Generating LSTDQ demonstrations..." << endl;
     vector<Demonstration> lstdqDemonstrations
         = generateDemonstrations(mdp, { &randomPolicy } , -1,
-                100, // Number of playouts
-             // 5000, // Number of playouts
+                5000, // Number of playouts
+                      // Should be high so that V_rho^* is accurate
                 0, false);
     set<int> uniqueStates;
     for (Demonstration demo : lstdqDemonstrations)
@@ -176,7 +184,6 @@ void test_BMT4()
          << lstdqDemonstrations.size() << " demonstrations..." << endl;
 
     // Evaluate programmatic optimal policy (LSTDQ)
-    // Find LSPI optimal policy and print weights
     auto optWeights = LSTDQ::lstdq(lstdqDemonstrations, optimalPolicy, mdp);
     cout.precision(numeric_limits<double>::digits10 - 12);
     cout << "Optimal weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
@@ -192,8 +199,8 @@ void test_BMT4()
         cout << fixed << d << "\t";
     cout << endl;
 
-    double loss = BMT::loss(optWeights, ranWeights, uniqueStates,
-                            cmp, true); // sum?
+    // double loss = BMT::loss(optWeights, ranWeights, uniqueStates,
+    //                         cmp, true); // sum?
 
     // TODO: Save/read on file?
     // Global set of reward functions
@@ -204,21 +211,44 @@ void test_BMT4()
     vector<vector<double>> rewardFunctions;
     for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
     {
+        /*
+         * Attempt to sample with as much noise as possible (low # playouts)
+         */
         vector<Demonstration> rewardDemonstrations
             = generateDemonstrations(mdp, { &randomPolicy } , -1,
-                    20, // Number of playouts
+                    10, // Number of playouts
                     0, // Initial state
                     false); // Print
-        rewardFunctions.push_back(
-                sampleRewardFunctions(N_REWARD_FUNCTIONS,
-                                      N_Q_APPROXIMATION_PLAYOUTS,
-                                      T_Q_APPROXIMATION_HORIZON,
-                                      rewardDemonstrations,
-                                      randomPolicy,
-                                      // optimalPolicy,
-                                      mdp)[0]);
-                               // lspiPolicy, mdp);
-                               // rewardPolicy, mdp);
+        auto rf = sampleRewardFunctions(N_REWARD_FUNCTIONS,
+                                        N_Q_APPROXIMATION_PLAYOUTS,
+                                        T_Q_APPROXIMATION_HORIZON,
+                                        rewardDemonstrations,
+                                        randomPolicy,
+                                        // optimalPolicy,
+                                        mdp)[0];
+                                 // lspiPolicy, mdp);
+                                 // rewardPolicy, mdp);
+        /*
+         * Workaround for when low # playouts gives unstable/diverging results.
+         */
+        static auto invalid_reward = [](float f)
+        { return isnan(f) || isinf(f) || f < -10 || f > 10; };
+        bool foundInvalidReward =
+            (find_if(rf.begin(), rf.end(), invalid_reward) != rf.end());
+        if (foundInvalidReward)
+            --i;
+        else
+        {
+            static gsl_rng *r_global = NULL;
+            if (r_global == NULL)
+            {
+                r_global = gsl_rng_alloc(gsl_rng_default);
+                gsl_rng_set(r_global, (unsigned)time(NULL));
+            }
+            for (auto r : rf)
+                r += gsl_ran_gaussian_ziggurat(r_global, 1);
+            rewardFunctions.push_back(rf);
+        }
     }
     mdp.gamma = 1.00;
     if (PRINT_DEBUG)
@@ -245,23 +275,58 @@ void test_BMT4()
     {
         mutableMdp.setRewardWeights(rewardFunctions[i]);
         optimalPolicies.push_back(LSTDQ::lspi(lstdqDemonstrations, mutableMdp,
-                                              true));
+                                              false));
     }
+    /*
+     * This is not interesting because "true MDP" should be MDP_m
+     *
+    cout << "Calculating corresponding summed losses of policies"
+         << " >>evaluated in the true MDP<<..." << endl;
+    vector<double> optimalPoliciesRealSummedLoss(N_REWARD_FUNCTIONS);
+    for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
+    {
+        // Evaluate in true MDP
+        auto weights = LSTDQ::lstdq(lstdqDemonstrations, optimalPolicies[i],
+                                    mdp);
+        double loss = BMT::loss(weights, optWeights, uniqueStates, cmp, true);
+        optimalPoliciesRealSummedLoss[i] = loss;
+        cout << "\t(" << i << ")\t" << loss << endl;
+    }
+    */
+    // Win rates
+    const int nWinRateDemonstrations = 10000;
+    cout << "Calculating corresponding average win rates (vs. random)..."
+         << endl;
+    vector<double> optimalWinRates;
+    for (auto pi : optimalPolicies)
+        optimalWinRates.push_back(
+            getAverageOptimalUtility(pi, mdp, 0, nWinRateDemonstrations, -1));
+    double programmaticOptimalScore
+        = getAverageOptimalUtility(optimalPolicy, mdp, 0,
+                                   nWinRateDemonstrations, -1);
+    double randomScore
+        = getAverageOptimalUtility(randomPolicy, mdp, 0,
+                                   nWinRateDemonstrations, -1);
+    double randomRandomScore
+        = getAverageOptimalUtility(randomRandomPolicy, mdp, 0,
+                                   nWinRateDemonstrations, -1);
     if (PRINT_DEBUG)
     {
         cout.precision(numeric_limits< double >::digits10 - 12);
-        cout << "\tTrue Optimal weights:" << endl;
-        cout << "\t\t";
+        cout << "\tTrue { score } and optimal weights:" << endl;
+        cout << "\t{ " << programmaticOptimalScore << " }\t";
         for (auto w : lspiPolicy.getWeights())
             cout << fixed << w << "\t";
         cout << endl;
-        cout << "\tSampled reward functions' optimal policies' optimal weights:"
-             << endl;
-        int i = 0;
-        for (auto pi : optimalPolicies)
+        cout << "\t{ " << randomScore << " }\t (random)" << endl;
+        cout << "\t{ " << randomRandomScore << " }\t (random random)" << endl;
+        cout << "\t{ score } and optimal weights of the optimal policies"
+             << " (from sampled reward functions):" << endl;
+        for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
         {
-            cout << "\t (" << i++ << ")\t";
-            for (auto w : pi.getWeights())
+            cout << " (" << i << ")\t" << fixed
+                 << "{ " << optimalWinRates[i] << " }\t";
+            for (auto w : optimalPolicies[i].getWeights())
                 cout << fixed << w << "\t";
             cout << endl;
         }
@@ -277,21 +342,70 @@ void test_BMT4()
      * experts may have a completely arbitrary reward function.
      */
     vector<SoftmaxPolicy> experts;
-    // Expert 0 is optimal
+    // Expert 0 misses information about Forks and Singlets
     experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[0]));
-    // Expert 1 misses information about Forks
-    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[1]));
     experts.back().setWeight(TicTacToeCMP::FEATURE_FORKS_X, 0);
     experts.back().setWeight(TicTacToeCMP::FEATURE_FORKS_O, 0);
-    // Expert 2 misses information about Singlets
-    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[2]));
     experts.back().setWeight(TicTacToeCMP::FEATURE_SINGLETS_X, 0);
     experts.back().setWeight(TicTacToeCMP::FEATURE_SINGLETS_O, 0);
-    // Expert 3 misses information about Doublets
+    // Expert 1 misses information about Doublets
+    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[1]));
+    double tmp;
+    tmp = experts.back().getWeights()[TicTacToeCMP::FEATURE_DOUBLETS_X];
+    experts.back().setWeight(TicTacToeCMP::FEATURE_DOUBLETS_X, 0.5 * tmp);
+    tmp = experts.back().getWeights()[TicTacToeCMP::FEATURE_DOUBLETS_O];
+    experts.back().setWeight(TicTacToeCMP::FEATURE_DOUBLETS_O, 0.5 * tmp);
+    // Expert 2 misses information about center and corners
+    experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[2]));
+    experts.back().setWeight(TicTacToeCMP::FEATURE_CENTER, 0);
+    experts.back().setWeight(TicTacToeCMP::FEATURE_CORNERS_X, 0);
+    experts.back().setWeight(TicTacToeCMP::FEATURE_CORNERS_O, 0);
+    // Expert 3 is noisy
     experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[3]));
-    experts.back().setWeight(TicTacToeCMP::FEATURE_DOUBLETS_X, 0);
-    experts.back().setWeight(TicTacToeCMP::FEATURE_DOUBLETS_O, 0);
+    // // Expert 0 is optimal
+    // experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[0]));
+    // // Expert 2 misses information about Singlets
+    // experts.push_back(SoftmaxPolicy(&cmp, optWeights, EXPERT_TEMPERATURES[2]));
+    // experts.back().setWeight(TicTacToeCMP::FEATURE_SINGLETS_X, 0);
+    // experts.back().setWeight(TicTacToeCMP::FEATURE_SINGLETS_O, 0);
 
+    cout << "Scores for the experts true policies:" << endl;
+    for (int i = 0; i < N_EXPERTS; ++i)
+    {
+        double expertScore
+            = getAverageOptimalUtility(experts[i], mdp, 0,
+                                       nWinRateDemonstrations, -1);
+            cout << "\t{ " << expertScore << " }\t (expert " << i << ")"
+                 << endl;
+    }
+
+    /*
+    // l_m per prior reward function
+    // Take expert weights as true value function of MDP_m
+    // Take reward function and use its optimal policy
+    // Calculate the loss of this optimal policy in MDP_m
+    cout << "Summed loss of reward-optimal policies w.r.t. true rho values"
+         << " rho_m == MDP_m == V_m == (expert weights)" << endl;
+    vector<vector<double>> expertRewardLoss(N_EXPERTS,
+                                            vector<double>(N_REWARD_FUNCTIONS,
+                                                           0));
+    for (int i = 0; i < N_EXPERTS; ++i)
+    {
+        cout << "\t";
+        for (int j = 0; j < N_REWARD_FUNCTIONS; ++j)
+        {
+            double loss = BMT::loss(experts[i].getWeights(),
+                                    optimalPolicies[j].getWeights(),
+                                    // uniqueStates, cmp, true);
+                                    uniqueStates, cmp, false);
+            cout << fixed << loss << "\t";
+            expertRewardLoss[i][j] = loss;
+        }
+        cout << endl;
+    }
+    */
+
+    /*
     // True expert losses w.r.t. true MDP
     cout << "Calculating summed losses for each expert w.r.t. true MDP (rf),"
          << " to be compared with \"final loss\" later:" << endl;
@@ -303,22 +417,40 @@ void test_BMT4()
                                 cmp, true); // sum?
         cout << "\t" << loss << endl;
     }
+    */
+
+    vector<vector<Demonstration>> expertBaseDemonstrations;
+    for (int i = 0; i < N_EXPERTS; ++i)
+    {
+        auto demonstrations
+            = generateDemonstrations(mdp, {&experts[i]},
+                                     -1, /* horizon = playout */
+                                     10000,
+                                     0, /* initialState */
+                                     false); /* No print */
+        expertBaseDemonstrations.push_back(demonstrations);
+    }
 
     for (int iteration = 0; iteration < N_EXPERT_PLAYOUTS; ++iteration)
     {
         const int N_EXPERT_DEMONSTRATIONS = N_N_EXPERT_PLAYOUTS[iteration];
 
         // Generate demonstrations
-        cout << "Generating " << N_EXPERTS << " expert demonstrations..." << endl;
+        cout << "Generating " << N_EXPERTS << " expert demonstrations of size "
+             << N_EXPERT_DEMONSTRATIONS << "..." << endl;
         vector<vector<Demonstration>> expertDemonstrations;
         for (int i = 0; i < N_EXPERTS; ++i)
         {
-            auto demonstrations
-                = generateDemonstrations(mdp, {&experts[i]},
-                                         -1, /* horizon = playout */
-                                         N_EXPERT_DEMONSTRATIONS,
-                                         0, /* initialState */
-                                         false); /* No print */
+            auto it = expertBaseDemonstrations[i].begin();
+            vector<Demonstration> demonstrations(it,
+                                                 it + N_EXPERT_DEMONSTRATIONS);
+
+            // auto demonstrations
+            //     = generateDemonstrations(mdp, {&experts[i]},
+            //                              -1, /* horizon = playout */
+            //                              N_EXPERT_DEMONSTRATIONS,
+            //                              0, /* initialState */
+            //                              false); /* No print */
             expertDemonstrations.push_back(demonstrations);
         }
 
@@ -336,12 +468,13 @@ void test_BMT4()
         // Sample K policies from the posterior of each expert
         cout << "Sampling " << N_POLICY_SAMPLES << " policies from " << N_EXPERTS
              << " experts..." << endl;
-        cout << "TESTING WITH 0th POLICY = TRUE EXPERT POLICY" << endl;
+        // cout << "TESTING WITH 0th POLICY = TRUE EXPERT POLICY" << endl;
         vector<vector<Policy*>> sampledPolicies(N_EXPERTS);
         for (int i = 0; i < N_EXPERTS; i++)
         {
-            sampledPolicies[i].push_back(&experts[i]);
-            for (int k = 0; k < N_POLICY_SAMPLES - 1; ++k)
+            // sampledPolicies[i].push_back(&experts[i]);
+            // for (int k = 0; k < N_POLICY_SAMPLES - 1; ++k)
+            for (int k = 0; k < N_POLICY_SAMPLES; ++k)
                 sampledPolicies[i].push_back(&posteriorPolicies[i].samplePolicy());
         }
 
@@ -350,10 +483,14 @@ void test_BMT4()
         vector<BMT> bmts;
         for (int i = 0; i < N_EXPERTS; ++i)
         {
-            // BMT bmt(mutableMdp, lstdqDemonstrations, rewardFunctions,
+            // Using expert demonstrations instead of lstdqDemonstrations since
+            // this gives better support for the posterior policy.
             BMT bmt(mutableMdp, expertDemonstrations[i], rewardFunctions,
                     optimalPolicies, sampledPolicies[i],
-                    EXPERT_OPTIMALITY_PRIORS[i]);
+                    EXPERT_OPTIMALITY_PRIORS[i],
+                    false, // withModel
+                    false); // sum
+                    // true); // sum
             bmts.push_back(bmt);
         }
 
@@ -379,23 +516,26 @@ void test_BMT4()
         }
 
         // Get best policy via argmax rho product
-        mutableMdp.setRewardWeights(rewardFunctions[rMax]);
-        DeterministicPolicy bestPolicy = LSTDQ::lspi(lstdqDemonstrations,
-                                                     mutableMdp);
+        // mutableMdp.setRewardWeights(rewardFunctions[rMax]);
+        // DeterministicPolicy bestPolicy = LSTDQ::lspi(lstdqDemonstrations,
+        //                                              mutableMdp);
 
-        // Evaluate it in the real MDP
-        vector<double> bestPolicyTrueMDPWeights
-            = LSTDQ::lstdq(lstdqDemonstrations, bestPolicy, mdp);
+        // // Evaluate it in the real MDP
+        // vector<double> bestPolicyTrueMDPWeights
+        //     = LSTDQ::lstdq(lstdqDemonstrations, bestPolicy, mdp);
 
+        /*
         double finalLoss = BMT::loss(bestPolicyTrueMDPWeights, optWeights,
                                      uniqueStates, cmp, true); // sum
         cout << "Final loss, approx pi* from rho_" << rMax
              << " = argmax rho product evaluated in true MDP: " << endl << "\t"
              << finalLoss
              << endl;
+        */
 
         if (true)
         {
+            vector<double> magicMeanRewardFunction(cmp.nFeatures(), 0);
             // Printing of loss matrices
             for (int i = 0; i < N_EXPERTS; ++i)
             {
@@ -428,8 +568,61 @@ void test_BMT4()
                 for (auto rewardProb : rewardProbabilities)
                     cout << fixed << rewardProb << "\t";
                 cout << endl;
+
+                // Average reward function
+                vector<double> meanRewardFunction(cmp.nFeatures(), 0);
+                // double meanLoss = 0;
+                // rewardExpertLoss
+                for (int j = 0; j < N_REWARD_FUNCTIONS; ++j)
+                {
+                    double p = rewardProbabilities[j];
+                    // meanLoss += p * expertRewardLoss[i][j];
+                    for (int k = 0; k < meanRewardFunction.size(); ++k)
+                    {
+                        meanRewardFunction[k] += p * rewardFunctions[j][k];
+                        magicMeanRewardFunction[k] += p / ((double) N_EXPERTS)
+                                                        * rewardFunctions[j][k];
+                    }
+                }
+                // Take expected reward function m --> get optimal policy m
+                // Compare policy m weights with true expert V_m
+                mutableMdp.setRewardWeights(meanRewardFunction);
+                // auto meanRFOptimalPolicy = LSTDQ::lspi(expertDemonstrations[i],
+                auto meanRFOptimalPolicy = LSTDQ::lspi(lstdqDemonstrations,
+                                                       mutableMdp);
+                double meanRFOptimalPolicyLoss
+                    // = BMT::loss(experts[i].getWeights(),
+                    = bmts[i].loss(experts[i].getWeights(),
+                                   meanRFOptimalPolicy.getWeights(),
+                                   true); // true=L1 norm
+                                // cmp, true); // true=L1 norm
+                                // cmp, false); // false=sup norm
+                double meanRFOptimalPolicyScore
+                    = getAverageOptimalUtility(meanRFOptimalPolicy, mdp, 0,
+                                               nWinRateDemonstrations, -1);
+                // Compared to true ?MDP_m == ?rho_m == expert_m.weights
+                // cout << "ARGMAX RHO(" << rMax << ") LOSS: "
+                //      << expertRewardLoss[i][rMax] << endl;
+                // cout << "MEAN LOSS: " << meanLoss << endl;
+                cout << "MEAN RF POLICY* LOSS IN MDP_m: "
+                     << meanRFOptimalPolicyLoss << endl;
+                cout << "MEAN RF POLICY* SCORE IN MDP: "
+                     << meanRFOptimalPolicyScore << endl;
+
                 cout << endl;
             }
+
+            /*
+             * Magic mean printing, hopefully good
+             */
+            mutableMdp.setRewardWeights(magicMeanRewardFunction);
+            auto magicMeanRFOptimalPolicy = LSTDQ::lspi(lstdqDemonstrations,
+                                                        mutableMdp);
+            double magicMeanRFOptimalPolicyScore
+                = getAverageOptimalUtility(magicMeanRFOptimalPolicy, mdp, 0,
+                                           nWinRateDemonstrations, -1);
+            cout << "~~~ MAGIC SCORE ~~~\t" << magicMeanRFOptimalPolicyScore
+                 << endl;
         }
     }
 }
@@ -748,8 +941,6 @@ double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
 }
 */
 
-double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T);
 double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
                                 int state, int action, int nPlayouts, int T)
 {
@@ -767,7 +958,8 @@ double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
         int s2 = tr.first;
         double p = tr.second;
         double Qs2a = getAverageOptimalUtility(optimalPolicy, mdp, s2,
-                                               transitions.size() * nPlayouts,
+                                               transitions.size(),
+                                               // transitions.size() * nPlayouts,
                                                T);
         double Qs2a2= getAverageOptimalUtility(optimalPolicy, mdp, s2,
                                                nPlayouts, T);
@@ -1321,14 +1513,14 @@ void test_lstdq_optpolicy()
 
         TicTacToeCMP::State s2(tttCmp.currentState);
 
-        auto features = tttCmp.features(s2);
+        auto features = tttCmp.features(s2.getState());
         // features[TicTacToeCMP::FEATURE_FORKS_X] = 0;
         // features[TicTacToeCMP::FEATURE_FORKS_O] = 0;
         // normalize(features);
 
         if (!terminal)
             s2.move(optimalPolicy.action(s2), 1);
-        auto featuresPi = tttCmp.features(s2);
+        auto featuresPi = tttCmp.features(s2.getState());
         // featuresPi[TicTacToeCMP::FEATURE_FORKS_X] = 0;
         // featuresPi[TicTacToeCMP::FEATURE_FORKS_O] = 0;
         // normalize(featuresPi);

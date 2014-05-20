@@ -21,10 +21,5 @@ double TicTacToeMDP::getReward(int s) const
         return rewards[win];
     }
     else
-    {
         return FeatureMDP::getReward(s);
-        // auto phi = cmp->features(s);
-        // return inner_product(phi.begin(), phi.end(), rewardWeights.begin(),
-        //                      0.0);
-    }
 }
