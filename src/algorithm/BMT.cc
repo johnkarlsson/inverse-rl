@@ -20,15 +20,19 @@ BMT::BMT( FeatureMDP _mdp,
           vector<vector<double>> const & _rewardFunctions,
           vector<DeterministicPolicy> const & optimalPolicies,
           vector<Policy*> const & sampledPolicies,
-          double _c, bool withModel, bool sum)
+          double _c, bool withModel, bool sum,
+          set<int>* _states)
     : K(sampledPolicies.size()), N(_rewardFunctions.size()),
       mdp(_mdp), rewardFunctions(_rewardFunctions),
       lstdqDemonstrations(_lstdqDemonstrations),
       c(_c)
 {
-    for (Demonstration demo : lstdqDemonstrations)
-        for (Transition tr : demo)
-            states.insert(tr.s);
+    if (_states != NULL)
+        states = set<int>(*_states);
+    else
+        for (Demonstration demo : lstdqDemonstrations)
+            for (Transition tr : demo)
+                states.insert(tr.s);
 
     policyRewardLoss = vector<vector<double>>(K, vector<double>(N, 0));
     for (int j = 0; j < N; ++j)
@@ -89,9 +93,23 @@ double BMT::loss(vector<double> const & wEval,
     double sum = 0;
     for (int s : states)
     {
-        vector<double> phi = cmp.features(s);
-        double vOpt = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
-        double vEval = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
+        auto validActions = cmp.kernel->getValidActions(s);
+        double vOpt = -DBL_MAX;
+        double vEval = -DBL_MAX;
+        for (auto a : validActions) // V(s) = max_a Q(s,a)
+        {
+            vector<double> phi = cmp.features(s,a);
+            double vOpt_tmp = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
+            double vEval_tmp = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
+            if (vOpt < vOpt_tmp)
+                vOpt = vOpt_tmp;
+            if (vEval < vEval_tmp)
+                vEval = vEval_tmp;
+        }
+        // vector<double> phi = cmp.features(s);
+        // double vOpt = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
+        // double vEval = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
+
         double diff = fabs(vOpt - vEval);
         if (calculateSum)
             sum += diff * diff;

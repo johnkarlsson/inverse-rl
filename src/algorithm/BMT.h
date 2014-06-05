@@ -20,7 +20,8 @@ class BMT
              vector<DeterministicPolicy> const & optimalPolicies,
              vector<Policy*> const & policies,
              double _c, bool withModel = true,
-             bool sum = false);
+             bool sum = false,
+             set<int>* _states = NULL);
         double loss(vector<double> const & weightsEval,
                     vector<double> const & weightsOpt,
                     bool calculateSum = false);
