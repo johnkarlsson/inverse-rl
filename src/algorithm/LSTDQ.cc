@@ -162,16 +162,17 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
 
 DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
                                 DiscreteMDP const & mdp, bool print,
-                                double epsilon)
+                                double epsilon,
+                                bool withModel)
 {
     return LSTDQ::lspi(D, mdp, vector<double>(mdp.cmp->nFeatures(),0), print,
-                       epsilon);
+                       epsilon, withModel);
 }
 
 DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
                                 DiscreteMDP const & mdp,
                                 vector<double> const & initialWeights,
-                                bool print, double epsilon)
+                                bool print, double epsilon, bool withModel)
 {
     assert(initialWeights.size() == mdp.cmp->nFeatures());
 
@@ -183,7 +184,7 @@ DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
     int i;
     for (i = 0; i < MAX_ITERATIONS; ++i)
     {
-        vector<double> weights = lstdq(D, pi, mdp);
+        vector<double> weights = lstdq(D, pi, mdp, withModel);
         bool done = true;
         for (int j = 0; j < weights.size(); ++j)
             if (fabs(weights[j] - pi.getWeights()[j]) > epsilon)
@@ -193,7 +194,8 @@ DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
             break;
     }
     if (i == MAX_ITERATIONS) // print regardless of print bool
-        cout << "LSPI ended after MAX_ITERATIONS = " << MAX_ITERATIONS;
+        cout << "\033[0;31mLSPI ended after MAX_ITERATIONS\033[0;0m = "
+             << MAX_ITERATIONS;
     else if (print)
         cout << "LSPI converged after " << i << " iterations";
 

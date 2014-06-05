@@ -8,24 +8,11 @@
 #include <assert.h>
 #include <vector>
 
+#include "../model/Transition.h"
 #include "../model/Policy.h"
 #include "../model/DiscreteMDP.h"
 
 using namespace std;
-
-class Transition
-{
-    public:
-        Transition() {};
-        Transition(int _s, int _a, int _s2, double _r);
-        // Transition(int _s, int _a);
-        int s, a;
-        double s2, r; // Not used in LSTDQ "with a model",
-                      // but useful for MC playouts.
-    private:
-};
-
-typedef vector<Transition> Demonstration;
 
 class LSTDQ
 {
@@ -40,11 +27,13 @@ class LSTDQ
                                         DiscreteMDP const & mdp,
                                         vector<double> const & initialWeights,
                                         bool print = true,
-                                        double epsilon = 1e-7);
+                                        double epsilon = 1e-7,
+                                        bool withModel = true);
         static DeterministicPolicy lspi(vector<Demonstration> const & D,
                                         DiscreteMDP const & mdp,
                                         bool print = true,
-                                        double epsilon = 1e-7);
+                                        double epsilon = 1e-7,
+                                        bool withModel = true);
 };
 
 inline double r() { return ((double) rand() / (double) RAND_MAX); }

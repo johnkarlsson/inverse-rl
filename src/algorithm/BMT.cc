@@ -27,6 +27,10 @@ BMT::BMT( FeatureMDP _mdp,
       lstdqDemonstrations(_lstdqDemonstrations),
       c(_c)
 {
+    cout << "\rBMT(#demos:" << _lstdqDemonstrations.size()
+         << ", model:" << withModel
+         << ", K:" << K << ", N:" << N << ", c:" << c;
+    cout.flush();
     if (_states != NULL)
         states = set<int>(*_states);
     else
@@ -42,6 +46,11 @@ BMT::BMT( FeatureMDP _mdp,
         vector<double> weightsOpt = optimalPolicies[j].getWeights();
         for (int k = 0; k < K; ++k)
         {
+            cout << "\rBMT(#demos:" << _lstdqDemonstrations.size()
+                 << ", model:" << withModel
+                 << ", K:" << K << ", N:" << N << ", c:" << c;
+            cout << "\tk:" << k << ", j:" << j;
+            cout.flush();
             vector<double> weightsEval = LSTDQ::lstdq(lstdqDemonstrations,
                                                       *sampledPolicies[k], mdp,
                                                       withModel);
@@ -49,6 +58,9 @@ BMT::BMT( FeatureMDP _mdp,
                                           states, *mdp.cmp, sum);
         }
     }
+    cout << "                                                             "
+         << "                                                             "
+         << "\r";
 
     // for (auto v : policyRewardLoss)
     //     for (auto loss : v)
@@ -99,8 +111,8 @@ double BMT::loss(vector<double> const & wEval,
         for (auto a : validActions) // V(s) = max_a Q(s,a)
         {
             vector<double> phi = cmp.features(s,a);
-            double vOpt_tmp = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
-            double vEval_tmp = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
+            double vOpt_tmp = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
+            double vEval_tmp = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
             if (vOpt < vOpt_tmp)
                 vOpt = vOpt_tmp;
             if (vEval < vEval_tmp)
@@ -110,7 +122,8 @@ double BMT::loss(vector<double> const & wEval,
         // double vOpt = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
         // double vEval = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
 
-        double diff = fabs(vOpt - vEval);
+        // double diff = fabs(vOpt - vEval);
+        double diff = vOpt - vEval;
         if (calculateSum)
             sum += diff * diff;
         else

@@ -31,11 +31,12 @@ class SoftmaxDirichletPrior
     : public StateActionDirichlet
 {
     public:
-        SoftmaxDirichletPrior(int _actions)
-            : StateActionDirichlet(_actions), cmp(NULL)
+        SoftmaxDirichletPrior(int _actions, double _alpha = 1.0)
+            : StateActionDirichlet(_actions), cmp(NULL), alpha(_alpha)
         {}
-        SoftmaxDirichletPrior(int _actions, DiscreteCMP const * const _cmp)
-            : StateActionDirichlet(_actions), cmp(_cmp)
+        SoftmaxDirichletPrior(int _actions, DiscreteCMP const * const _cmp,
+                              double _alpha = 1.0)
+            : StateActionDirichlet(_actions), cmp(_cmp), alpha(_alpha)
         {}
         double getAlpha(int s, int a)
         {
@@ -49,10 +50,11 @@ class SoftmaxDirichletPrior
                 if (validActions.find(a) == validActions.end())
                     return 0;
             }
-            return 1;//0.01;
+            return alpha;//1;//0.01;
         }
     private:
         DiscreteCMP const * cmp;
+        const double alpha;
 };
 
 class DirichletPolicyPosterior

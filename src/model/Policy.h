@@ -16,10 +16,7 @@ class Policy
 {
     public:
         virtual std::vector<std::pair<int,double>> probabilities(int s) = 0;
-        virtual ~Policy()
-        {
-            // std::cout << "~Policy()" << std::endl;
-        };
+        virtual ~Policy() { };
 };
 
 class ConstPolicy 
@@ -76,7 +73,6 @@ class FeaturePolicy // Abstract
         DiscreteCMP const * const cmp;
 };
 
-// class SoftmaxPolicy
 class DeterministicPolicy
     : public FeaturePolicy
 {

@@ -4,13 +4,9 @@
 #include <vector>
 #include "TransitionKernel.h"
 
-typedef int state;
-typedef int action;
-typedef double probability;
-
 /*
  * Distinguish between MDP and CMP (Controlled Markov Process) to make multi
- * task (multi MDP) IRL more explicitly stated.
+ * task (multi MDP) IRL more explicit.
  */
 class DiscreteCMP
 {

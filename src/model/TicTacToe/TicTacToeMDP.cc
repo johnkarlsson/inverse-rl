@@ -2,10 +2,8 @@
 #include "TicTacToeCMP.h"
 
 #include <vector>
-#include <numeric>
 
 using std::vector;
-using std::inner_product;
 
 TicTacToeMDP::TicTacToeMDP(const DiscreteCMP * cmp, bool _trueRewards)
     : FeatureMDP(cmp, 1.0), trueRewards(_trueRewards)

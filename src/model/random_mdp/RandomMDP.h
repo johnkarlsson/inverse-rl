@@ -18,7 +18,7 @@ class RandomMDP
         // std::vector<double> getRewardWeights();
 
     private:
-        std::vector<double> rewardWeights;
+        // std::vector<double> rewardWeights;
 };
 
 #endif
