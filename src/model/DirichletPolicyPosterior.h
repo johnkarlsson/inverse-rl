@@ -1,13 +1,15 @@
 #ifndef DIRICHLETPOLICYPOSTERIOR_H
 #define DIRICHLETPOLICYPOSTERIOR_H
 
-#include "Policy.h"
-#include "../algorithm/LSTDQ.h" // TODO: Just for Demonstration and Transition, move them!
 #include <vector>
 #include <iostream>
 #include <memory>
 #include <map>
+
 #include <gsl/gsl_rng.h>
+
+#include "Policy.h"
+#include "../model/Transition.h"
 
 class StateActionDirichlet
 {

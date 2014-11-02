@@ -7,7 +7,7 @@
 #include "../model/DiscreteCMP.h"
 #include "../model/Policy.h"
 #include "../model/random_mdp/RandomMDP.h"
-#include "../algorithm/LSTDQ.h" // TODO: For Demonstration
+#include "../model/Transition.h"
 
 using std::vector;
 using std::set;

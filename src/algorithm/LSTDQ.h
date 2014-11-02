@@ -8,6 +8,7 @@
 #include <assert.h>
 #include <vector>
 
+#include "../util.h"
 #include "../model/Transition.h"
 #include "../model/Policy.h"
 #include "../model/DiscreteMDP.h"
@@ -35,8 +36,6 @@ class LSTDQ
                                         double epsilon = 1e-7,
                                         bool withModel = true);
 };
-
-inline double r() { return ((double) rand() / (double) RAND_MAX); }
 
 void test_lstdq();
 

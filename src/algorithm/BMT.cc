@@ -9,8 +9,10 @@
 #include <gsl/gsl_cdf.h>
 
 #include "../model/DiscreteCMP.h"
+#include "../algorithm/LSTDQ.h"
 
 using std::vector;
+using std::cout;
 using std::inner_product;
 
 

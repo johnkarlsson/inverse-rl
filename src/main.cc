@@ -29,6 +29,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 
+#include "util.h"
+
 using namespace std;
 
 void test_discretecmp();
@@ -42,17 +44,7 @@ std::pair<double,double> optimal_vs_random();
 void compare_vi_qi(int cmp_size=10, double epsilon=0.001);
 void test_dirichletPolicyPosterior();
 void test_BMT();
-void test_BMT2();
-void normalize(vector<double>& v);
-int sample(vector<pair<int, double>> transitionProbabilities);
 vector<Demonstration> generateRandomMDPDemonstrations(RandomMDP& mdp, int len);
-//vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp, Policy& pi,
-vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
-                                             vector<Policy*> policies,
-                                             int demonstrationLength,
-                                             int nDemonstrations = 1,
-                                             int initialState = -1,
-                                             bool print = true);
 vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
                                              int playoutHorizon,
                                              vector<Demonstration>&
@@ -62,10 +54,8 @@ vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
 void test_generateTTT();
 void test_BMT3();
 void test_BMT4();
-double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T);
 
-vector<double> wGlobal;
+vector<double> wGlobal; // For testLstdqOptimalpolicy and Play for TTT
 static const std::string default_console = "\033[0m";
 
 int main(int argc, const char *argv[])
@@ -93,16 +83,6 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    if (true)
-    {
-        test_BMT2();
-        return 0;
-    }
-    else
-    {
-        test_BMT();
-        return 0;
-    }
     // test_dirichletPolicyPosterior();
     // return 0;
     test_valueiteration();
@@ -1385,90 +1365,6 @@ double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
     return (Qsa - mdp.gamma * expectedVs2); // Average reward by definition
 }
 
-double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T)
-{
-    vector<Demonstration> playouts
-        = generateDemonstrations(mdp, {&optimalPolicy}, T, nPlayouts, state,
-                                 false);
-    // Calculate discounted sum of rewards
-    double totalPayoff = 0;
-    for (Demonstration d : playouts)
-        for (int t = 0; t < d.size(); ++t)
-            totalPayoff += d[t].r * pow(mdp.gamma, t); // starts with ^0
-    return (totalPayoff / (double) nPlayouts);
-}
-
-vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
-                                             vector<Policy*> policies,
-                                             int demonstrationLength,
-                                             int nDemonstrations,
-                                             int initialState,
-                                             bool print)
-{
-    if (print)
-    {
-        cout << "Generating " << nDemonstrations << " demonstrations";
-        if (demonstrationLength > -1)
-            cout << " of length " << demonstrationLength;
-        cout << "..." << endl;
-    }
-
-    vector<Demonstration> demonstrations(nDemonstrations);
-
-    bool printTicTacToe = false;
-
-    for (int d = 0; d < nDemonstrations; ++d)
-    {
-        int currentState;
-        if (initialState == -1) // Uniform initial state dist
-            currentState = rand() % mdp.cmp->states;
-        else
-            currentState = initialState;
-        int previousState;
-
-        for (int t = 0;
-             (demonstrationLength < 0 || t < demonstrationLength)
-                 && !mdp.cmp->isTerminal(currentState);
-             ++t)
-        {
-            Policy& pi = *policies[t % policies.size()];
-            auto actionProbabilities = pi.probabilities(currentState);
-            int action = sample(actionProbabilities);
-
-            previousState = currentState;
-            auto transitionProbabilities = 
-                mdp.cmp->kernel->getTransitionProbabilities(currentState,
-                                                            action);
-            currentState = sample(transitionProbabilities);
-
-            if (printTicTacToe) // print
-            {
-                ((TicTacToeCMP*)mdp.cmp)->printState(
-                    TicTacToeCMP::State(
-                        ((TicTacToeCMP*)mdp.cmp)->size, currentState));
-                cout << "isTerminal: " << mdp.cmp->isTerminal(currentState)
-                     << endl;
-                cout << "winner: " << 
-                    ((TicTacToeCMP*)mdp.cmp)->winner(
-                    TicTacToeCMP::State(
-                        ((TicTacToeCMP*)mdp.cmp)->size, currentState))
-                     << endl;
-            }
-
-            double reward = mdp.getReward(currentState);
-            demonstrations[d].push_back(Transition(previousState, action,
-                                                   currentState, reward));
-        }
-        if (printTicTacToe) // print
-            cout << endl << "-------------------------------------------------"
-                 << endl;
-    }
-
-    if (print)
-        cout << "Done!" << endl;
-    return demonstrations;
-}
 
 void test_generateTTT()
 {
@@ -1560,259 +1456,6 @@ vector<Demonstration> generateSoftmaxDemonstrations(RandomMDP& mdp,
 }
 
 
-/*
-void test_BMT2()
-{
-    const double gamma = 0.95;
-    const int states = 6;
-    const int actions = 10;
-    RandomTransitionKernel kernel(states, actions);
-    RandomCMP cmp(&kernel);
-    RandomMDP mdp(&cmp, gamma); // True MDP
-
-    // Length of demonstrations
-    const int T = 10000;
-
-    // Set R of reward functions to be used in comparison with all tasks
-    const int N = 10;
-    vector<vector<double>> rewardSamplesTmp(N);
-    vector<vector<double>*> rewardSamples(N);
-    for (int j = 0; j < N; ++j)
-    {
-        rewardSamplesTmp[j] = test_BWT2_sampleRewardFunction(cmp.nFeatures());
-        rewardSamples[j] = &rewardSamplesTmp[j];
-    }
-
-    // Random demonstrations used for policy evaluation (LSTDQ&LSPI)
-    auto lspiDemonstrations = generateRandomMDPDemonstrations(mdp);
-
-    // True reward function of MDP
-    vector<double> trueRewardFunction1(cmp.nFeatures(), 0);
-    for (int s = 0; s < cmp.states; ++s)
-        trueRewardFunction1[s] = mdp.getReward(s);
-
-    // True optimal policy of MDP
-    DeterministicPolicy policyLspiTrue1 = LSTDQ::lspi(lspiDemonstrations, mdp);
-
-    // True policy of expert 1
-    double expertTemperature1 = 0.0001;
-    SoftmaxPolicy expertPolicy1(&cmp, policyLspiTrue1.getWeights(),
-                                expertTemperature1);
-
-    auto expertDemonstrations1 = generateSoftmaxDemonstrations(mdp, T,
-                                                               expertPolicy1);
-
-    cout << "Expert action probabilities:" << endl;
-    if (true)
-    {
-        for (int s = 0; s < states; ++s)
-        {
-            auto pr = expertPolicy1.probabilities(s);
-            cout << "\t{ ";
-            for (auto p : pr)
-            {
-                cout << "(" << p.first << ", "
-                     << (p.second < 0.001 ? 0 : p.second) << "), ";
-            }
-            cout << " }" << endl;
-        }
-    }
-
-
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    // Let the first reward function be the TRUE for comparison
-    rewardSamples[0] = &trueRewardFunction1;
-    // rewardSamplesTmp[1] = policyLspiTrue.getWeights();
-    // rewardSamples[1] = &rewardSamplesTmp[1];
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    //////////////////////////////////////////////////////////////////////////////////////////
-    cout << "True reward function of expert 1: " << endl << "\t";
-    for (auto r : trueRewardFunction1)
-    {
-        cout << r << "\t";
-    }
-    cout << endl;
-
-    cout << "Sampled reward functions: " << endl;
-    for (auto rho : rewardSamples)
-    {
-        cout << "\t";
-        for (double rs : *rho)
-        {
-            cout << rs << "\t";
-        }
-        cout << endl;
-    }
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    SoftmaxDirichletPrior policyPrior(actions);
-    DirichletPolicyPosterior policyPosterior(policyPrior,
-                                             expertDemonstrations1);
-
-    // Policy samples
-    const int K = 10;
-    vector<Policy*> policySamples1(K);
-    for (int k = 0; k < K; ++k)
-        policySamples1[k] = &policyPosterior.samplePolicy();
-    //////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////////////  True policy  //////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////
-    SoftmaxPolicy policyOptimal(&cmp, policyLspiTrue1.getWeights(), 0.0001);
-    policySamples1[0] = &expertPolicy1;   // Expert policy (data)
-    policySamples1[1] = &policyLspiTrue1; // Zero loss policy
-    policySamples1[2] = &policyOptimal;   // --> 0 loss policy
-    //////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    BMT bmt(mdp, lspiDemonstrations, rewardSamples, policySamples1);
-
-    cout.precision(numeric_limits< double >::digits10 - 12);
-    cout << "Loss matrix" << endl;
-    {
-        for (int k = 0; k < K; ++k)
-        {
-            for (int j = 0; j < N; ++j)
-            {
-                cout << fixed << bmt.getLoss(k,j) << "\t";
-            }
-            cout << endl;
-        }
-    }
-
-    cout.precision(numeric_limits< double >::digits10 - 12);
-    cout << "Reward function probabilities (unnormalised):" << endl;
-    for (int j = 0; j < N; ++j)
-    {
-        cout << fixed << bmt.getRewardProbability(j) << "\t";
-    }
-    cout << endl;
-}
-*/
-
-/*
-void test_BMT()
-{
-    const double gamma = 0.5;
-    const int states = 6;
-    const int actions = 10;
-    RandomTransitionKernel kernel(states, actions);
-    RandomCMP cmp(&kernel);
-    RandomMDP mdp(&cmp, gamma);
-    auto demonstrations = generateRandomMDPDemonstrations(mdp);
-
-    vector<double> rewardFunction1 = { mdp.getReward(0), mdp.getReward(1),
-                                       mdp.getReward(2), mdp.getReward(3),
-                                       mdp.getReward(4), mdp.getReward(5),
-                                       0 };
-    vector<double> rewardFunction2 = { 10 , 20, 30, 40, 50, 60, 0 } ; // Should be horrible
-    vector<double> rewardFunction3 = { mdp.getReward(0), mdp.getReward(1),
-                                       0,                mdp.getReward(3),
-                                       mdp.getReward(4), 0,
-                                       0 };
-
-    auto rewardFunctions = {&rewardFunction1, &rewardFunction2, &rewardFunction3};
-    for (auto rho : rewardFunctions)
-        normalize(*rho);
-
-    const int N = rewardFunctions.size();
-
-    // TODO: Use Dirichlet Policy Posterior to get reasonable policies.
-    // Now have 1 bad and 1 good
-    ConstPolicy policy1 = ConstPolicy(vector<int>(states, 0)); // Always action 0
-    DeterministicPolicy policy2 = LSTDQ::lspi(demonstrations, mdp);
-    ConstPolicy policy3 = ConstPolicy(vector<int>(states, 1)); // Always action 1
-    // Softmax Policies based on optimal policy but with different temperatures
-    SoftmaxPolicy policy4(&cmp, policy2.getWeights(), 0.00001);
-    SoftmaxPolicy policy5(&cmp, policy2.getWeights(), 0.001);
-    SoftmaxPolicy policy6(&cmp, policy2.getWeights(), 0.01);
-    SoftmaxPolicy policy7(&cmp, policy2.getWeights(), 0.1);
-    SoftmaxPolicy policy8(&cmp, policy2.getWeights(), 1.0);
-
-    vector<Policy*> policies = {&policy1, &policy2, &policy3,
-                                &policy4, &policy5, &policy6,
-                                &policy7, &policy8};
-    const int K = policies.size();
-
-    // Debug print policy action
-    for (int i = 0; i < K; ++i)
-    {
-        cout << "Policy " << i << " actions:\t";
-        for (int s = 0; s < states; ++s)
-            cout << "(" << policies[i]->probabilities(s)[0].first
-                 << ", " << policies[i]->probabilities(s)[0].second << ") ";
-        cout << endl;
-    }
-
-    BMT bmt(mdp, demonstrations, rewardFunctions, policies);
-
-    if (false)
-    {
-        for (int s = 0; s < states; ++s)
-        {
-            auto pr = policy4.probabilities(s);
-            cout << "\t{";
-            for (auto p : pr)
-            {
-                cout << "(" << p.first << ", " << p.second << ")";
-            }
-            cout << "}" << endl;
-        }
-    }
-
-    if (false)
-    {
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        vector<int> sstates(demonstrations.size());
-        for (Demonstration demo : demonstrations)
-            for (Transition tr : demo)
-                sstates.push_back(tr.s); // TODO: Alot of repetition of states here. Make it std::set
-        cout << "Loss progression: ";
-        for (double c = 0.1; c < 1; c += 0.1)
-        {
-            SoftmaxPolicy sp(&cmp, policy2.getWeights(), c);
-            auto weights = LSTDQ::lstdq(demonstrations, sp, mdp);
-            cout << c << ": " << bmt.loss(weights, policy2.getWeights(), sstates, cmp) << " ";
-            // cout << endl;
-            // for (int s = 0; s < states; ++s)
-            // {
-            //     auto pr = sp.probabilities(s);
-            //     cout << "\t{";
-            //     for (auto p : pr)
-            //     {
-            //         cout << "(" << p.first << ", " << p.second << ")";
-            //     }
-            //     cout << "}" << endl;
-            // }
-        }
-        cout << endl;
-        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    }
-
-    cout.precision(numeric_limits< double >::digits10 - 12);
-    cout << "Loss matrix" << endl;
-    {
-        for (int k = 0; k < K; ++k)
-        {
-            for (int j = 0; j < N; ++j)
-            {
-                cout << fixed << bmt.getLoss(k,j) << "\t";
-            }
-            cout << endl;
-        }
-    }
-
-    cout.precision(numeric_limits< double >::digits10 - 12);
-    cout << "Reward function probabilities (unnormalised):" << endl;
-    for (int j = 0; j < N; ++j)
-    {
-        cout << fixed << bmt.getRewardProbability(j) << "\t";
-    }
-    cout << endl;
-}
-*/
-
 void test_dirichletPolicyPosterior()
 {
     const double gamma = 0.5;
@@ -1866,16 +1509,6 @@ void test_dirichletPolicyPosterior()
     // foo.samplePolicy();
     // foo.samplePolicy();
     return;
-}
-
-void normalize(vector<double>& v)
-{
-    double sum = 0;
-    int k = v.size();
-    for (int i = 0; i < k; ++i)
-        sum += v[i];
-    for (int i = 0; i < k; ++i)
-        v[i] /= sum;
 }
 
 void test_lstdq_optpolicy()
@@ -2194,30 +1827,6 @@ void play_optimalTTTpolicy()
 
         tttCmp.move(i-1, j-1, 2);
         checkWin();
-    }
-}
-
-int sample(vector<pair<int, double>> transitionProbabilities)
-{
-    double rr = r(); // [0,1]
-    double sum = 0;
-    for (auto p : transitionProbabilities)
-    {
-        int s2 = p.first;
-        double prob = p.second;
-        sum += prob;
-        if (rr <= sum) // Assumes that the probabilities sum to 1
-            return s2;
-    }
-    if (sum < 1-1e-6)
-    {
-        std::ostringstream ss;
-        ss << "sum = " << sum << " < 1";
-        throw std::runtime_error(ss.str());
-    }
-    else
-    {
-        return transitionProbabilities.back().first;
     }
 }
 
