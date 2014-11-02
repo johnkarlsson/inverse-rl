@@ -14,7 +14,7 @@
 #include "model/random_mdp/RandomMDP.h"
 #include "model/DirichletPolicyPosterior.h"
 #include "model/Policy.h"
-#include "algorithm/LSTDQ.h"
+#include "algorithm/LSPI.h"
 #include "algorithm/BMT.h"
 #include "algorithm/ValueIteration.h"
 #include <cmath>
@@ -271,7 +271,7 @@ void test_BMT4()
         }
         trueRewardFunctions.push_back(expertRf);
         mutableMdp.setRewardWeights(expertRf);
-        auto expertPolicy = LSTDQ::lspi(lstdqDemonstrations, mutableMdp);
+        auto expertPolicy = LSPI::lspi(lstdqDemonstrations, mutableMdp);
         experts.push_back(expertPolicy);
         // cout << "Calculating its score" << endl;
         // double expertScore = getAverageOptimalUtility(expertPolicy, mdp, 0,
@@ -285,7 +285,7 @@ void test_BMT4()
 
 
     // Evaluate programmatic optimal policy (LSTDQ)
-    auto optWeights = LSTDQ::lstdq(lstdqDemonstrations, optimalPolicy, mdp);
+    auto optWeights = LSPI::lstdq(lstdqDemonstrations, optimalPolicy, mdp);
     cout.precision(numeric_limits<double>::digits10 - 12);
     cout << "Optimal weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
     for (double d : optWeights)
@@ -293,7 +293,7 @@ void test_BMT4()
     cout << endl;
 
     // Evaluate random policy (LSTDQ)
-    auto ranWeights = LSTDQ::lstdq(lstdqDemonstrations, randomPolicy, mdp);
+    auto ranWeights = LSPI::lstdq(lstdqDemonstrations, randomPolicy, mdp);
     cout.precision(numeric_limits<double>::digits10 - 12);
     cout << "Random weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
     for (double d : ranWeights)
@@ -376,7 +376,7 @@ void test_BMT4()
         }
     }
 
-    DeterministicPolicy lspiPolicy = LSTDQ::lspi(lstdqDemonstrations, mdp);
+    DeterministicPolicy lspiPolicy = LSPI::lspi(lstdqDemonstrations, mdp);
     // TODO: Save/read on file?
     // Global set of corresponding optimal policies
     cout << "Creating " << N_REWARD_FUNCTIONS
@@ -385,7 +385,7 @@ void test_BMT4()
     for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
     {
         mutableMdp.setRewardWeights(rewardFunctions[i]);
-        optimalPolicies.push_back(LSTDQ::lspi(lstdqDemonstrations, mutableMdp,
+        optimalPolicies.push_back(LSPI::lspi(lstdqDemonstrations, mutableMdp,
                                               false));
     }
     /*
@@ -397,7 +397,7 @@ void test_BMT4()
     for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
     {
         // Evaluate in true MDP
-        auto weights = LSTDQ::lstdq(lstdqDemonstrations, optimalPolicies[i],
+        auto weights = LSPI::lstdq(lstdqDemonstrations, optimalPolicies[i],
                                     mdp);
         double loss = BMT::loss(weights, optWeights, uniqueStates, cmp, true);
         optimalPoliciesRealSummedLoss[i] = loss;
@@ -572,7 +572,7 @@ void test_BMT4()
          << " to be compared with \"final loss\" later:" << endl;
     for (int i = 0; i < N_EXPERTS; ++i)
     {
-        // auto expertWeights = LSTDQ::lstdq(lstdqDemonstrations, experts[i], mdp);
+        // auto expertWeights = LSPI::lstdq(lstdqDemonstrations, experts[i], mdp);
         auto expertWeights = experts[i].getWeights();
         double loss = BMT::loss(expertWeights, optWeights, uniqueStates,
                                 cmp, true); // sum?
@@ -758,13 +758,13 @@ void test_BMT4()
                 // Take expected reward function m --> get optimal policy m
                 // Compare policy m weights with true expert V_m
                 mutableMdp.setRewardWeights(meanRewardFunction);
-            //  auto meanRFOptimalPolicy = LSTDQ::lspi(lstdqDemonstrations,
-                auto meanRFOptimalPolicy = LSTDQ::lspi(expertDemonstrations[i],
+            //  auto meanRFOptimalPolicy = LSPI::lspi(lstdqDemonstrations,
+                auto meanRFOptimalPolicy = LSPI::lspi(expertDemonstrations[i],
                                                        mutableMdp);
                 mutableMdp.setRewardWeights(trueRewardFunctions[i]); // update
                 auto meanRFOptimalPolicyInTrueMDPWeights
-                 // = LSTDQ::lstdq(lstdqDemonstrations, meanRFOptimalPolicy,
-                    = LSTDQ::lstdq(expertDemonstrations[i], meanRFOptimalPolicy,
+                 // = LSPI::lstdq(lstdqDemonstrations, meanRFOptimalPolicy,
+                    = LSPI::lstdq(expertDemonstrations[i], meanRFOptimalPolicy,
                                    mutableMdp); // mdp);
                 auto MDP_m_optimalWeights =  // Update:
                     experts[i].getWeights(); //   expert[i] is OptimalPolicy
@@ -798,11 +798,11 @@ void test_BMT4()
              */
             // Calculate ~optimal policy for magic mean
             mutableMdp.setRewardWeights(magicMeanRewardFunction);
-            auto magicMeanRFOptimalPolicy = LSTDQ::lspi(lstdqDemonstrations,
+            auto magicMeanRFOptimalPolicy = LSPI::lspi(lstdqDemonstrations,
                                                         mutableMdp);
             // // Evaluate magic ~optimal policy in true environment
             // auto magicMeanRFOptimalPolicyInTrueMDPWeights
-            //     = LSTDQ::lstdq(lstdqDemonstrations, magicMeanRFOptimalPolicy,
+            //     = LSPI::lstdq(lstdqDemonstrations, magicMeanRFOptimalPolicy,
             //                    mdp);
             // double magicMeanRFOptimalPolicyLoss
             //     = BMT::loss(magicMeanRFOptimalPolicyInTrueMDPWeights,
@@ -896,7 +896,7 @@ void test_BMT3()
 
     // Optimal policy
     cout << "Calculating optimal policy (LSPI)..." << endl;
-    DeterministicPolicy lspiPolicy = LSTDQ::lspi(lstdqDemonstrations, mdp,
+    DeterministicPolicy lspiPolicy = LSPI::lspi(lstdqDemonstrations, mdp,
                                                  true, 1e-7, useModel);
 
     // TODO: Save/read on file?
@@ -971,7 +971,7 @@ void test_BMT3()
     for (int i = 0; i < N_REWARD_FUNCTIONS; ++i)
     {
         mdp.setRewardWeights(rewardFunctions[i]);
-        optimalPolicies.push_back(LSTDQ::lspi(lstdqDemonstrations, mdp, false,
+        optimalPolicies.push_back(LSPI::lspi(lstdqDemonstrations, mdp, false,
                                               1e-7, useModel));
     }
     mdp.setRewardWeights(trueRewardFunction); // TODO: Probably not necessary
@@ -1022,7 +1022,7 @@ void test_BMT3()
             }
             trueRewardFunctions.push_back(expertRf);
             mdp.setRewardWeights(expertRf);
-            auto expertDeterministic = LSTDQ::lspi(lstdqDemonstrations, mdp);
+            auto expertDeterministic = LSPI::lspi(lstdqDemonstrations, mdp);
             auto expert = SoftmaxPolicy(&cmp, expertDeterministic.getWeights(),
                                         EXPERT_TEMPERATURES[i]);
             mdp.setRewardWeights(trueRewardFunction);
@@ -1043,7 +1043,7 @@ void test_BMT3()
     mdp.setRewardWeights(trueRewardFunction);
     for (int i = 0; i < N_EXPERTS; ++i)
     {
-        auto expertWeights = LSTDQ::lstdq(lstdqDemonstrations, experts[i], mdp);
+        auto expertWeights = LSPI::lstdq(lstdqDemonstrations, experts[i], mdp);
         // lspiPolicy.getWeights() // Opt weights
         double loss = BMT::loss(expertWeights, optimalWeights, uniqueStates,
                                 cmp, useSum); // sum?
@@ -1165,12 +1165,12 @@ void test_BMT3()
 
         // // Get best policy via argmax rho product
         // mdp.setRewardWeights(rewardFunctions[rMax]);
-        // DeterministicPolicy bestPolicy = LSTDQ::lspi(lstdqDemonstrations, mdp);
+        // DeterministicPolicy bestPolicy = LSPI::lspi(lstdqDemonstrations, mdp);
 
         // // Evaluate it in the real MDP
         // mdp.setRewardWeights(trueRewardFunction);
         // vector<double> bestPolicyTrueMDPWeights
-        //     = LSTDQ::lstdq(lstdqDemonstrations, bestPolicy, mdp);
+        //     = LSPI::lstdq(lstdqDemonstrations, bestPolicy, mdp);
 
         /*
         double finalLoss = BMT::loss(bestPolicyTrueMDPWeights, optimalWeights,
@@ -1243,7 +1243,7 @@ void test_BMT3()
 
                 // Take expected reward function m --> get ~optimal policy m
                 mdp.setRewardWeights(meanRewardFunction);
-                auto meanRFOptimalPolicy = LSTDQ::lspi(lstdqDemonstrations, mdp,
+                auto meanRFOptimalPolicy = LSPI::lspi(lstdqDemonstrations, mdp,
                                                        true, 1e-7, useModel);
                 // Evaluate ~optimal policy m in true environment
                 mdp.setRewardWeights(trueRewardFunctions[i]);
@@ -1253,7 +1253,7 @@ void test_BMT3()
                 else
                     MDP_m_optimalWeights = optimalWeights;
                 auto meanRFOptimalPolicyInTrueMDPWeights
-                    = LSTDQ::lstdq(lstdqDemonstrations, meanRFOptimalPolicy,
+                    = LSPI::lstdq(lstdqDemonstrations, meanRFOptimalPolicy,
                                    mdp);
                 // Calculate loss w.r.t. true optimalWeights
                 double meanRFOptimalPolicyLoss
@@ -1284,13 +1284,13 @@ void test_BMT3()
             // TODO: Print "magic loss" not only magic score
             // Calculate ~optimal policy for magic mean
             mdp.setRewardWeights(magicMeanRewardFunction);
-            auto magicMeanRFOptimalPolicy = LSTDQ::lspi(lstdqDemonstrations,
+            auto magicMeanRFOptimalPolicy = LSPI::lspi(lstdqDemonstrations,
                                                         mdp, true, 1e-7,
                                                         useModel);
             // Evaluate magic ~optimal policy in true environment
             mdp.setRewardWeights(trueRewardFunction);
             auto magicMeanRFOptimalPolicyInTrueMDPWeights
-                = LSTDQ::lstdq(lstdqDemonstrations, magicMeanRFOptimalPolicy,
+                = LSPI::lstdq(lstdqDemonstrations, magicMeanRFOptimalPolicy,
                                mdp);
             double magicMeanRFOptimalPolicyLoss
                 = BMT::loss(// magicMeanRFOptimalPolicy.getWeights(),
@@ -1379,14 +1379,14 @@ void test_generateTTT()
         = generateDemonstrations(mdp, policies, -1, 10, 0);
 
     // vector<double> optWeights(cmp.nFeatures());
-    auto optWeights = LSTDQ::lstdq(demonstrations, policyOptimal, mdp);
+    auto optWeights = LSPI::lstdq(demonstrations, policyOptimal, mdp);
     cout.precision(numeric_limits<double>::digits10 - 12);
     cout << "Optimal weights X(s,d,t,x,c,f) O(s,d,t,x,c,f) : " << endl;
     for (double d : optWeights)
         cout << fixed << d << "\t";
     cout << endl;
     cout << "LSPI weights: " << endl;
-    DeterministicPolicy lspiPolicy = LSTDQ::lspi(demonstrations, mdp);
+    DeterministicPolicy lspiPolicy = LSPI::lspi(demonstrations, mdp);
     auto lspiWeights = lspiPolicy.getWeights();
     for (double d : lspiWeights)
         cout << fixed << d << "\t";
@@ -1594,7 +1594,7 @@ void test_lstdq_optpolicy()
 
     cout << "..." << endl;
 
-    vector<double> w = LSTDQ::solve(k, n, phi, td, b);
+    vector<double> w = LSPI::solve(k, n, phi, td, b);
 
     cout << "LSTDQ(optimal policy) w* = ";
     for (int i = 0; i < k; ++i)
@@ -1876,7 +1876,7 @@ vector<double> test_lstdq_randomMDP(RandomMDP& mdp, Policy& pi)
     auto demonstrations = generateRandomMDPDemonstrations(mdp, 500);
     const int k = mdp.cmp->nFeatures();
 
-    vector<double> w = LSTDQ::lstdq(demonstrations, pi, mdp);
+    vector<double> w = LSPI::lstdq(demonstrations, pi, mdp);
     cout << "LSTDQ w* ( ";
     for (int s = 0; s < mdp.cmp->states; ++s)
     {
@@ -2142,7 +2142,7 @@ void test_valueiteration()
      * LSPI
      */
     auto demonstrations = generateRandomMDPDemonstrations(mdp, 500);
-    DeterministicPolicy lspiPolicy = LSTDQ::lspi(demonstrations, mdp);
+    DeterministicPolicy lspiPolicy = LSPI::lspi(demonstrations, mdp);
     cout << "LSPI w* ( ";
     for (int s = 0; s < mdp.cmp->states; ++s)
     {

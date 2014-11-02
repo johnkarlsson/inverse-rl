@@ -1,5 +1,5 @@
-#ifndef LSTDQ_H
-#define LSTDQ_H
+#ifndef LSPI_H
+#define LSPI_H
 
 #include <gsl/gsl_linalg.h>
 #include <gsl/gsl_blas.h>
@@ -15,7 +15,7 @@
 
 using namespace std;
 
-class LSTDQ
+class LSPI
 {
     public:
         static vector<double> solve(int nFeatures, int nSamples,

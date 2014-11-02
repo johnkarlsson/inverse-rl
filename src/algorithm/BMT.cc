@@ -9,7 +9,7 @@
 #include <gsl/gsl_cdf.h>
 
 #include "../model/DiscreteCMP.h"
-#include "../algorithm/LSTDQ.h"
+#include "../algorithm/LSPI.h"
 
 using std::vector;
 using std::cout;
@@ -44,7 +44,7 @@ BMT::BMT( FeatureMDP _mdp,
     for (int j = 0; j < N; ++j)
     {
         mdp.setRewardWeights(rewardFunctions[j]);
-        // vector<double> weightsOpt = LSTDQ::lspi(D, mdp).getWeights();
+        // vector<double> weightsOpt = LSPI::lspi(D, mdp).getWeights();
         vector<double> weightsOpt = optimalPolicies[j].getWeights();
         for (int k = 0; k < K; ++k)
         {
@@ -53,7 +53,7 @@ BMT::BMT( FeatureMDP _mdp,
                  << ", K:" << K << ", N:" << N << ", c:" << c;
             cout << "\tk:" << k << ", j:" << j;
             cout.flush();
-            vector<double> weightsEval = LSTDQ::lstdq(lstdqDemonstrations,
+            vector<double> weightsEval = LSPI::lstdq(lstdqDemonstrations,
                                                       *sampledPolicies[k], mdp,
                                                       withModel);
             policyRewardLoss[k][j] = loss(weightsEval, weightsOpt,
@@ -230,6 +230,6 @@ DeterministicPolicy BMT::optimalPolicy()
 
     mdp.setRewardWeights(rewardFunctions[maxRewardFunction]);
 
-    return LSTDQ::lspi(lstdqDemonstrations, mdp);
+    return LSPI::lspi(lstdqDemonstrations, mdp);
 }
 

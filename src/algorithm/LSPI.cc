@@ -1,4 +1,4 @@
-#include "LSTDQ.h"
+#include "LSPI.h"
 #include "../model/Policy.h"
 #include "../model/DiscreteMDP.h"
 
@@ -11,7 +11,7 @@ Transition::Transition(int _s, int _a, int _s2, double _r)
 //     : s(_s), a(_a)
 // {}
 
-vector<double> LSTDQ::solve(int nFeatures, int nSamples,
+vector<double> LSPI::solve(int nFeatures, int nSamples,
                             vector<double>& phi, vector<double>& td,
                             vector<double>& b)
 {
@@ -73,7 +73,7 @@ vector<double> LSTDQ::solve(int nFeatures, int nSamples,
     return output;
 }
 
-vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
+vector<double> LSPI::lstdq(vector<Demonstration> const & D, Policy& pi,
                             DiscreteMDP const & mdp, bool withModel)
 {
     int n = 0;
@@ -121,7 +121,7 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
                 double transitionProbability = tr.second;
 
                 // Average phi(s2, pi(s2)) over policy probabilities (regardless
-                // of LSTDQ version).
+                // of LSPI version).
                 if (!mdp.cmp->isTerminal(s2)) // Otherwise featuresPi == 0
                 {
                     auto actionProbabilities = pi.probabilities(s2);
@@ -160,16 +160,16 @@ vector<double> LSTDQ::lstdq(vector<Demonstration> const & D, Policy& pi,
 }
 
 
-DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
+DeterministicPolicy LSPI::lspi(vector<Demonstration> const & D,
                                 DiscreteMDP const & mdp, bool print,
                                 double epsilon,
                                 bool withModel)
 {
-    return LSTDQ::lspi(D, mdp, vector<double>(mdp.cmp->nFeatures(),0), print,
+    return LSPI::lspi(D, mdp, vector<double>(mdp.cmp->nFeatures(),0), print,
                        epsilon, withModel);
 }
 
-DeterministicPolicy LSTDQ::lspi(vector<Demonstration> const & D,
+DeterministicPolicy LSPI::lspi(vector<Demonstration> const & D,
                                 DiscreteMDP const & mdp,
                                 vector<double> const & initialWeights,
                                 bool print, double epsilon, bool withModel)
@@ -229,7 +229,7 @@ void test_lstdq()
             td[i] = r();
         }
 
-        vector<double> w = LSTDQ::solve(k, n, phi, td, b);
+        vector<double> w = LSPI::solve(k, n, phi, td, b);
         if (print)
         {
             cout << "LSTDQ w* = ";
