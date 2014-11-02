@@ -44,7 +44,6 @@ std::pair<double,double> optimal_vs_random();
 void compare_vi_qi(int cmp_size=10, double epsilon=0.001);
 void test_dirichletPolicyPosterior();
 void test_BMT();
-vector<Demonstration> generateRandomMDPDemonstrations(RandomMDP& mdp, int len);
 vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
                                              int playoutHorizon,
                                              vector<Demonstration>&
@@ -1423,39 +1422,6 @@ void test_generateTTT()
     // cout << "Global count2: " << globalCount2 << endl;
 }
 
-vector<Demonstration> generateSoftmaxDemonstrations(RandomMDP& mdp,
-                                                    int demonstrationLength,
-                                                    SoftmaxPolicy& pi)
-{
-    const int nDemonstrations = 1;
-    // const int demonstrationLength = 1000;
-    vector<Demonstration> demonstrations(nDemonstrations,
-                                         Demonstration(demonstrationLength,
-                                                       Transition()));
-
-    for (int d = 0; d < nDemonstrations; ++d)
-    {
-        int currentState = rand() % mdp.cmp->states; // Uniform initial state dist
-        int previousState;
-
-        for (int t = 0; t < demonstrationLength; ++t)
-        {
-            int action = sample(pi.probabilities(currentState));
-            previousState = currentState;
-            auto transitionProbabilities = 
-                mdp.cmp->kernel->getTransitionProbabilities(currentState,
-                                                            action);
-            currentState = sample(transitionProbabilities);
-            double reward = mdp.getReward(currentState); // Deterministic state rewards
-            demonstrations[d][t] = Transition(previousState, action,
-                                              currentState, reward);
-        }
-    }
-
-    return demonstrations;
-}
-
-
 void test_dirichletPolicyPosterior()
 {
     const double gamma = 0.5;
@@ -1464,7 +1430,10 @@ void test_dirichletPolicyPosterior()
     RandomTransitionKernel kernel(states, actions);
     RandomCMP cmp(&kernel);
     RandomMDP mdp(&cmp, gamma);
-    auto demonstrations = generateRandomMDPDemonstrations(mdp, 500);
+    RandomPolicy randomPolicy(mdp.cmp);
+    auto demonstrations =
+        generateDemonstrations(mdp, {&randomPolicy}, 500, 1,
+                -1 /* uniform initial state distribution */, false);
 
     SoftmaxDirichletPrior prior(actions);
     DirichletPolicyPosterior foo(prior, demonstrations);
@@ -1830,50 +1799,14 @@ void play_optimalTTTpolicy()
     }
 }
 
-
-vector<Demonstration> generateRandomMDPDemonstrations(RandomMDP& mdp,
-                                                      int demonstrationLength)
-{
-    const int nDemonstrations = 1;
-    // const int demonstrationLength = 500;
-    vector<Demonstration> demonstrations(nDemonstrations,
-                                         Demonstration(demonstrationLength, Transition()));
-
-    for (int d = 0; d < nDemonstrations; ++d)
-    {
-        int currentState = rand() % mdp.cmp->states; // Uniform initial state dist
-        int previousState;
-
-        for (int t = 0; t < demonstrationLength; ++t)
-        {
-            int action = rand() % mdp.cmp->actions; // Completely random actions
-            previousState = currentState;
-            auto transitionProbabilities = 
-                mdp.cmp->kernel->getTransitionProbabilities(currentState,
-                                                            action);
-            bool print = false;
-            if (print && transitionProbabilities.size() > 1)
-                cout << transitionProbabilities[0].first << " "
-                     << transitionProbabilities[0].second << " "
-                     << transitionProbabilities[1].first << " "
-                     << transitionProbabilities[1].second;
-            currentState = sample(transitionProbabilities);
-            if (print && transitionProbabilities.size() > 1)
-                cout << "to: " << currentState << endl;
-            double reward = mdp.getReward(currentState); // Deterministic state rewards
-            demonstrations[d][t] = Transition(previousState, action,
-                                              currentState, reward);
-        }
-    }
-
-    return demonstrations;
-}
-
 vector<double> test_lstdq_randomMDP(RandomMDP& mdp, Policy& pi)
 {
     // cout << "*** Testing LSTDQ on RandomMDP" << endl;
 
-    auto demonstrations = generateRandomMDPDemonstrations(mdp, 500);
+    RandomPolicy randomPolicy(mdp.cmp);
+    auto demonstrations =
+        generateDemonstrations(mdp, {&randomPolicy}, 500, 1,
+                -1 /* uniform initial state distribution */, false);
     const int k = mdp.cmp->nFeatures();
 
     vector<double> w = LSPI::lstdq(demonstrations, pi, mdp);
@@ -1962,80 +1895,6 @@ void test_valueiteration()
 
     mdp.setRewardWeights({-5, 1, 10});
 
-
-    if (false)
-    {
-        const double gamma = 0.5;
-        const int states = 4;
-        const int actions = 2;
-        RandomTransitionKernel kernel(states, actions);
-        RandomCMP cmp(&kernel);
-        RandomMDP mdp(&cmp, gamma);
-
-        if (false)
-            for (int s = 0; s < states; ++s)
-                mdp.setReward(s, mdp.getReward(s)*100);
-
-        if (false)
-        {
-            // EX1
-            for (int s = 0; s < states; ++s)
-                for (int s2 = 0; s2 < states; ++s2)
-                    for (int a = 0; a < actions; ++a)
-                        kernel.setTransitionProbability(s, a, s2, 0);
-            kernel.setTransitionProbability(0, 0, 1, 1);
-            kernel.setTransitionProbability(1, 0, 0, 1);
-            if (false)
-                kernel.setTransitionProbability(2, 0, 2, 1);
-            else
-            {
-                kernel.setTransitionProbability(2, 0, 2, 0.50);
-                kernel.setTransitionProbability(2, 0, 1, 0.50);
-            }
-            kernel.setTransitionProbability(3, 0, 2, 1);
-            kernel.setTransitionProbability(0, 1, 0, 1);
-            kernel.setTransitionProbability(1, 1, 2, 1);
-            kernel.setTransitionProbability(2, 1, 3, 1);
-            kernel.setTransitionProbability(3, 1, 3, 1);
-            mdp.setReward(0, -1);
-            mdp.setReward(1, 0);
-            mdp.setReward(2, 2);
-            mdp.setReward(3, 1);
-        }
-        if (false)
-        {
-            for (int a = 0; a < actions; ++a)
-                for (int s = 0; s < states; ++s)
-                {
-                    auto pp = kernel.getTransitionProbabilities(s, a);
-                    for (auto ppp : pp)
-                    {
-                        cout << "Action " << a << " in state " << s
-                             << " takes you to state " << ppp.first
-                             << " with probability " << ppp.second << endl;
-                    }
-                }
-        }
-
-        if (false && true && true)
-        {
-            vector<double> phi = cmp.features(2, 0);
-            cout << "phi(s=2, a=0) = ";
-            for (auto f : phi)
-            {
-                cout << f << " ";
-            }
-            cout << endl;
-            auto tp = cmp.kernel->getTransitionProbabilities(2, 0);
-            for (auto p : tp)
-            {
-                cout << "P(s'=" << p.first << " | s=2, a=0) = " << p.second << "\t";
-            }
-            cout << endl;
-            return;
-        }
-    }
-
     ValueIteration vi(&mdp);
     vi.computeStateActionValues();
 
@@ -2087,32 +1946,6 @@ void test_valueiteration()
         }
     }
 
-    /*
-    // Print max transition prob for each state and action
-    for (int a = 0; a < actions; ++a)
-    {
-        cout << "max s' { P(S=., A=" << a << ", S'=s') } = " << endl;
-        cout << "\t";
-        for (int s = 0; s < states; ++s)
-        {
-            double maxProb = 0;
-            int maxState;
-            for (int s2 = 0; s2 < states; ++s2)
-            {
-                double prob = kernel.getTransitionProbability(s, a, s2);
-                if (prob > maxProb)
-                {
-                    maxProb = prob;
-                    maxState = s2;
-                }
-            }
-            cout << "S" << maxState;
-            cout << fixed << " (" << maxProb << ")" << " \t";
-        }
-        cout << endl;
-    }
-    */
-
     vector<int> bestActions(states, 0);
     for (int s = 0; s < states; ++s)
     {
@@ -2141,7 +1974,11 @@ void test_valueiteration()
     /*
      * LSPI
      */
-    auto demonstrations = generateRandomMDPDemonstrations(mdp, 500);
+    RandomPolicy randomPolicy(mdp.cmp);
+    auto demonstrations =
+        generateDemonstrations(mdp, {&randomPolicy}, 500, 1,
+                -1 /* uniform initial state distribution */, false);
+
     DeterministicPolicy lspiPolicy = LSPI::lspi(demonstrations, mdp);
     cout << "LSPI w* ( ";
     for (int s = 0; s < mdp.cmp->states; ++s)

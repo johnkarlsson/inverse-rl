@@ -147,4 +147,14 @@ class SoftmaxPolicy
         const double c;
 };
 
+class RandomPolicy
+    : public SoftmaxPolicy
+{
+    public:
+        RandomPolicy(DiscreteCMP const * const _cmp)
+            : SoftmaxPolicy(_cmp, vector<double>(_cmp->nFeatures(), 0), 1)
+        {}
+};
+
+
 #endif
