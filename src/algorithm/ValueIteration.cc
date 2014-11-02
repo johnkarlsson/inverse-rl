@@ -25,7 +25,8 @@ void ValueIteration::computeStateActionValues(double epsilon)
                 double sum = 0;
                 for (int s2 = 0; s2 < mdp->cmp->states; ++s2)
                 {
-                    double p = mdp->cmp->kernel->getTransitionProbability(s, a, s2);
+                    double p = mdp->cmp->kernel->getTransitionProbability(s, a,
+                                                                          s2);
                     double r = mdp->getReward(s2); // R(s,a,s')
                     double max_a__Q_s2 = -DBL_MAX;
                     for (int a2 = 0; a2 < mdp->cmp->actions; ++a2)
