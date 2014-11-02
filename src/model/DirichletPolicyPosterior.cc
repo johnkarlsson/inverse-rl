@@ -64,3 +64,4 @@ vector<int>& DirichletPolicyPosterior::getActionCounts(int s)
         it = stateActionCounts.insert({s, vector<int>(actions, 0)}).first;
     return it->second;
 }
+

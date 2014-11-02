@@ -20,6 +20,13 @@ vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                                              int initialState = -1,
                                              bool print = true);
 
+vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
+                                             int playoutHorizon,
+                                             vector<Demonstration>&
+                                                 lstdqDemonstrations,
+                                             Policy& optimalPolicy,
+                                             DiscreteMDP& mdp);
+
 int sample(vector<pair<int, double>> transitionProbabilities);
 
 inline double r() { return ((double) rand() / (double) RAND_MAX); }

@@ -2,6 +2,7 @@
 #include "model/Policy.h"
 #include "model/Transition.h"
 #include "model/DiscreteMDP.h"
+#include "algorithm/BMT.h"
 
 #include <sstream>
 
@@ -132,4 +133,37 @@ double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
     }
 
     return (Qsa - mdp.gamma * expectedVs2); // Average reward by definition
+}
+
+vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
+                                             int playoutHorizon,
+                                             vector<Demonstration>&
+                                                 lstdqDemonstrations,
+                                             Policy& optimalPolicy,
+                                             DiscreteMDP& mdp)
+{
+    vector<vector<double>> rewardFunctions;
+
+    for (int i = 0; i < nFunctions; ++i)
+    {
+        vector<double> Phi;
+        vector<double> avgRewards;
+        for (Demonstration d : lstdqDemonstrations)
+        {
+            for (Transition tr : d)
+            {
+                double avgReward = getExpectedOptimalReward(optimalPolicy, mdp,
+                                                            tr.s, tr.a, nPlayouts,
+                                                            playoutHorizon);
+                vector<double> features = mdp.cmp->features(tr.s, tr.a);
+                copy(features.begin(), features.end(), back_inserter(Phi));
+                avgRewards.push_back(avgReward);
+            }
+        }
+
+        auto rewardFunction = BMT::solve_rect(Phi, avgRewards);
+        rewardFunctions.push_back(rewardFunction);
+    }
+
+    return rewardFunctions;
 }
