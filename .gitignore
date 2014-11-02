@@ -19,3 +19,6 @@
 *.swo
 *.vim
 *.clang_complete
+
+# Other
+output
