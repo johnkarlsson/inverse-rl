@@ -43,7 +43,6 @@ class FeaturePolicy // Abstract
             : weights(_cmp->nFeatures(), 0), cmp(_cmp)
         {}
 
-
         double getValue(int s, int a)
         {
             auto phi = cmp->features(s,a);
@@ -88,10 +87,12 @@ class DeterministicPolicy
         std::vector<std::pair<int,double>> probabilities(int s)
         {
             auto validActions = cmp->kernel->getValidActions(s);
+            assert(validActions.size() > 0);
             int aMax;
             double qMax = -DBL_MAX;
             for (int a : validActions)
             {
+                assert(a < cmp->actions && a >= 0);
                 double q = getValue(s,a);
                 if (q > qMax)
                 {

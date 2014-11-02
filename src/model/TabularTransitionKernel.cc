@@ -2,19 +2,16 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <assert.h>
 
 using namespace std;
 
 TabularTransitionKernel::TabularTransitionKernel(int _states, int _actions)
     : TransitionKernel(_states, _actions),
-      kernel(states, vector<vector<double>>(actions, vector<double>(states))),
-      valid_actions(states, set<int>())
-{
-    // kernel = vector<vector<vector<double>>>(
-    //         states, vector<vector<double>>(
-    //             actions, vector<double>(
-    //                 states)));
-}
+      kernel(_states, vector<vector<double>>(_actions,
+                                             vector<double>(_states))),
+      valid_actions(_states, set<int>())
+{}
 
 TabularTransitionKernel::~TabularTransitionKernel()
 {}
@@ -27,12 +24,20 @@ double TabularTransitionKernel::getTransitionProbability(const int s,
 }
 
 void TabularTransitionKernel::setTransitionProbability(const int s,
-                                             const int a,
-                                             const int s2,
-                                             const double p)
+                                                       const int a,
+                                                       const int s2,
+                                                       const double p)
 {
+    assert(a < actions && a >= 0);
+    assert(s < states && s >= 0);
+    assert(s2 < states && s2 >= 0);
+
+    kernel[s][a][s2] = p;
+
     if (p != 0)
+    {
         valid_actions[s].insert(a);
+    }
     else
     {
         bool nonzero = false;
@@ -42,17 +47,17 @@ void TabularTransitionKernel::setTransitionProbability(const int s,
                 nonzero = true;
                 break;
             }
-        if (nonzero)
+        if (!nonzero)
             valid_actions[s].erase(a);
     }
-
-    kernel[s][a][s2] = p;
 }
 
 vector< pair<state, probability> >
     TabularTransitionKernel::getTransitionProbabilities(const int s,
                                                         const int a) const
 {
+    assert(s < states && s >= 0);
+    assert(a < actions && a >= 0);
     vector< pair<state, probability> > output;
     for (int s2 = 0; s2 < states; ++s2)
     {
@@ -66,5 +71,6 @@ vector< pair<state, probability> >
 
 set<int> TabularTransitionKernel::getValidActions(const int s) const
 {
+    assert(s < states && s >= 0);
     return valid_actions[s];
 }
