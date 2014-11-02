@@ -10,6 +10,9 @@ using namespace std;
 double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
                                 int state, int nPlayouts, int T);
 
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int action, int nPlayouts, int T);
+
 vector<Demonstration> generateDemonstrations(DiscreteMDP& mdp,
                                              vector<Policy*> policies,
                                              int demonstrationLength,

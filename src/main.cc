@@ -33,7 +33,6 @@
 
 using namespace std;
 
-void test_discretecmp();
 void test_valueiteration();
 void test_tictactoecmp();
 void test_tictactoetransitionkernel();
@@ -41,9 +40,7 @@ void test_lstdq_optpolicy();
 void play_optimalTTTpolicy();
 void test_tictactoecmp_print(TicTacToeCMP& tttCmp);
 std::pair<double,double> optimal_vs_random();
-void compare_vi_qi(int cmp_size=10, double epsilon=0.001);
 void test_dirichletPolicyPosterior();
-void test_BMT();
 vector<vector<double>> sampleRewardFunctions(int nFunctions, int nPlayouts,
                                              int playoutHorizon,
                                              vector<Demonstration>&
@@ -84,15 +81,11 @@ int main(int argc, const char *argv[])
 
     // test_dirichletPolicyPosterior();
     // return 0;
-    test_valueiteration();
-    return 0;
-    // test_discretecmp();
     test_tictactoetransitionkernel();
     test_tictactoecmp();
     test_lstdq();
     test_lstdq_optpolicy();
     play_optimalTTTpolicy();
-    // compare_vi_qi(30, 10);
     return 0;
 }
 
@@ -1310,56 +1303,6 @@ void test_BMT3()
 
     float seconds = ((float)(clock() - t))/CLOCKS_PER_SEC;
     cerr << "Finished in " << seconds << " seconds." << endl;
-}
-
-/*
-double getAverageOptimalUtility(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T);
-double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int action, int nPlayouts, int T);
-*/
-
-/*
- * These methods only perform some playouts from an optimal policy to generate
- * natural noise to the optimal values.
- */
-/*
-double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int nPlayouts, int T)
-{
-    // Assuming optimal policy is stationary.
-    int a = optimalPolicy.probabilities(state)[0].first;
-    return getExpectedOptimalReward(optimalPolicy, mdp, state, a, nPlayouts, T);
-}
-*/
-
-double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
-                                int state, int action, int nPlayouts, int T)
-{
-    // // Assuming optimal policy is stationary.
-    // int a = optimalPolicy.probabilities(state)[0].first;
-    auto transitions = mdp.cmp->kernel->getTransitionProbabilities(state,
-                                                                   action);
-
-    // Q(s,a) where a = pi*(s)
-    double Qsa = 0;
-
-    double expectedVs2 = 0; // Expected V(s')
-    for (auto tr : transitions)
-    {
-        int s2 = tr.first;
-        double p = tr.second;
-        double Qs2a = getAverageOptimalUtility(optimalPolicy, mdp, s2,
-                                               transitions.size(),
-                                               // transitions.size() * nPlayouts,
-                                               T);
-        double Qs2a2= getAverageOptimalUtility(optimalPolicy, mdp, s2,
-                                               nPlayouts, T);
-        Qsa += p * (mdp.getReward(s2) + mdp.gamma * Qs2a2);
-        expectedVs2 += p * Qs2a;
-    }
-
-    return (Qsa - mdp.gamma * expectedVs2); // Average reward by definition
 }
 
 

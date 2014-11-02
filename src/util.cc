@@ -105,3 +105,31 @@ void normalize(vector<double>& v)
         v[i] /= sum;
 }
 
+double getExpectedOptimalReward(Policy& optimalPolicy, DiscreteMDP& mdp,
+                                int state, int action, int nPlayouts, int T)
+{
+    // // Assuming optimal policy is stationary.
+    // int a = optimalPolicy.probabilities(state)[0].first;
+    auto transitions = mdp.cmp->kernel->getTransitionProbabilities(state,
+                                                                   action);
+
+    // Q(s,a) where a = pi*(s)
+    double Qsa = 0;
+
+    double expectedVs2 = 0; // Expected V(s')
+    for (auto tr : transitions)
+    {
+        int s2 = tr.first;
+        double p = tr.second;
+        double Qs2a = getAverageOptimalUtility(optimalPolicy, mdp, s2,
+                                               transitions.size(),
+                                               // transitions.size() * nPlayouts,
+                                               T);
+        double Qs2a2= getAverageOptimalUtility(optimalPolicy, mdp, s2,
+                                               nPlayouts, T);
+        Qsa += p * (mdp.getReward(s2) + mdp.gamma * Qs2a2);
+        expectedVs2 += p * Qs2a;
+    }
+
+    return (Qsa - mdp.gamma * expectedVs2); // Average reward by definition
+}
