@@ -1,15 +1,9 @@
 #include "LSPI.h"
 #include "../model/Policy.h"
 #include "../model/DiscreteMDP.h"
+#include "../model/Transition.h"
 
 #include <ctime>
-
-Transition::Transition(int _s, int _a, int _s2, double _r)
-    : s(_s), a(_a), s2(_s2), r(_r)
-{}
-// Transition::Transition(int _s, int _a)
-//     : s(_s), a(_a)
-// {}
 
 vector<double> LSPI::solve(int nFeatures, int nSamples,
                             vector<double>& phi, vector<double>& td,

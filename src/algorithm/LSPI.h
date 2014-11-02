@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "../util.h"
-#include "../model/Transition.h"
 #include "../model/Policy.h"
 #include "../model/DiscreteMDP.h"
 
