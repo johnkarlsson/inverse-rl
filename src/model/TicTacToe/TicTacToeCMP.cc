@@ -72,18 +72,23 @@ int TicTacToeCMP::winner(const State& state) const
 
 void TicTacToeCMP::State::move(int i, int j, int value)
 {
-    std::ostringstream os;
-    os << "(" << i << "," << j << ")";
-
     if (! ( value == 1 || value == 2) )
         throw std::invalid_argument(
             "State.move() called with value \\notin {1,2}");
     if (i < 0 || i > size || j < 0 || j > size)
+    {
+        std::ostringstream os;
+        os << "(" << i << "," << j << ")";
         throw std::invalid_argument(
             "State.move() called with invalid position " + os.str() + ".");
+    }
     if (getPoint(i,j) != 0)
+    {
+        std::ostringstream os;
+        os << "(" << i << "," << j << ")";
         throw std::invalid_argument(
             "State.move() called with occupied position " + os.str() + ".");
+    }
 
     state = TicTacToeTransitionKernel::successor(state, i, j, size, value);
     /*
@@ -282,8 +287,6 @@ int TicTacToeCMP::nFeatures() const
         + 2           // corners per player
         + 2           // forks per player
         + 1;          // center occupation
-
-    // TODO: Add bias (1) feature ?
 }
 
 /*

@@ -3,9 +3,6 @@
 
 #include "../DiscreteCMP.h"
 #include "RandomTransitionKernel.h"
-// #include <vector>
-// #include <cmath>
-// #include <stdexcept>
 
 class RandomCMP : public DiscreteCMP
 {

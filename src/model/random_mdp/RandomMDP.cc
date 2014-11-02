@@ -22,26 +22,3 @@ RandomMDP::RandomMDP(const DiscreteCMP *cmp, double gamma)
 
     setRewardWeights(weights);
 }
-
-/*
-double RandomMDP::getReward(int s) const
-{
-    auto phi = cmp->features(s);
-    return inner_product(phi.begin(), phi.end(), rewardWeights.begin(), 0.0);
-}
-
-vector<double> RandomMDP::getRewardWeights()
-{
-    return rewardWeights;
-}
-
-void RandomMDP::setRewardWeights(vector<double> weights)
-{
-    rewardWeights = weights;
-}
-
-void RandomMDP::setReward(int s, double r)
-{
-    rewardWeights[s] = r;
-}
-*/

@@ -886,8 +886,6 @@ void test_BMT3()
         d.push_back(Transition(i, 0,0,0));
     lstdqDemonstrations.push_back(d);
 
-    // auto lstdqDemonstrations
-    //     = generateRandomMDPDemonstrations(mdp, lstdDemonstrationLength);
     set<int> uniqueStates;
     for (Demonstration demo : lstdqDemonstrations)
         for (Transition tr : demo)
@@ -1864,7 +1862,8 @@ void test_valueiteration()
     const double gamma = 0.5;
     const int states = 3;
     const int actions = 2;
-    RandomTransitionKernel kernel(states, actions);
+    RandomTransitionKernel kernel(states, actions); // All values overridden
+                                                    // below
     RandomCMP cmp(&kernel);
     RandomMDP mdp(&cmp, gamma);
 
@@ -2063,18 +2062,6 @@ void test_valueiteration()
         }
     }
 
-    if (false) // Print Ax=b system
-    {
-        i = 0;
-        j = 0;
-        for (double ai : A)
-        {
-            cout << ai << " ";
-            if ((++i % k) == 0)
-                cout << "\t" << b[j++] << endl;
-        }
-    }
-
     // auto rewards = BMT::solve_rect(A, b);
 
     cout << "Solved rewards from linear system generated using features &" 
@@ -2087,31 +2074,6 @@ void test_valueiteration()
             cout << r << "\t";
         cout << endl;
     }
-
-    // Mathematica output
-    /*
-    bool first = true;
-    cout << "{";
-    for (int s = 0; s < states; ++s)
-    {
-        for (int a = 0; a < actions; ++a)
-        {
-            if (!first)
-                cout << ", ";
-            else
-                first = false;
-            vector<double> xs = cmp.features(s, a);
-            double y = vi.Q[s][a];
-            cout << "{";
-            for (auto x : xs)
-            {
-                cout << x << ", ";
-            }
-            cout << y << "}";
-        }
-    }
-    cout << "}" << endl;
-    */
 
     vector<double> phi = cmp.features(2, 0);
     cout << "phi(s=2, a=0) = ";

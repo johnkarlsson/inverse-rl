@@ -18,22 +18,6 @@ class TicTacToeCMP
             public:
                 State(int _size) : size(_size), state(0) {};
                 State(int _size, int _state) : size(_size), state(_state) {};
-            /*
-                State(int _size) : size(_size), state(0),
-                                   raw(std::vector<int>(_size*_size,0)) {};
-                State(int _size, int s)
-                    : size(_size), state(0),
-                      raw(std::vector<int>(_size*_size,0))
-                {
-                    setState(s);
-                };
-            */
-                // State(State& s) : size(s.size), state(s.state), raw(s.raw) {};
-            /*
-                int getPoint(int i, int j) const // Matrix indexing
-                { return raw[j + i*size]; }
-                inline int getPoint(int a) const { return raw[a]; }
-            */
                 inline int getPoint(int i, int j) const // Matrix indexing
                 {
                     return TicTacToeTransitionKernel::pointValue(state, i, j,
@@ -48,21 +32,7 @@ class TicTacToeCMP
                 { return state; };
 
                 void move(int i, int j, int value);
-                /*
-                {
-                    state = TicTacToeTransitionKernel::successor(state, i, j,
-                                                                 size, value);
-                }
-                */
-
                 void move(int position, int value);
-                /*
-                {
-                    state = TicTacToeTransitionKernel::successor(state,
-                                                                 position,
-                                                                 value);
-                }
-                */
 
                 void setState(int s, bool invert = false)
                 {
@@ -82,25 +52,7 @@ class TicTacToeCMP
                         }
                         state = invertedState;
                     }
-                    /*
-                    int v;
-                    for (int a = raw.size()-1; a >= 0; --a)
-                    {
-                        v = 0;
-                        int av = pow(3,a);
-                        while (s >= av)
-                        {
-                            ++v;
-                            s -= av;
-                        }
-                        // At this point, pointValue(s,a) == v
-                        raw[a] = v;
-                        if (invert && v != 0)
-                            raw[a] = ((v == 1) ? 2 : 1);
-                    }
-                    */
                 }
-                // setState(std::vector<int>&)
                 const int size;
             protected:
                 int state;
@@ -114,13 +66,15 @@ class TicTacToeCMP
 
         // std::vector<double> features(const State& s) const;
         std::vector<double> features(const State& s) const
-        { return features(s.getState()); }
+        {
+            return features(s.getState());
+        }
         std::vector<double> features(int s) const;
-        // std::vector<double> features() const { return features(currentState); };
         std::vector<double> features() const
-        { throw std::runtime_error("features() unsupported."); };
-        // std::vector<double> features(int s) const
-        // { return features(TicTacToeCMP::State(size, s)); };
+        {
+            throw std::runtime_error("features() unsupported.");
+            // return features(currentState);
+        };
 
         std::vector<double> features(int s, int a) const;
 

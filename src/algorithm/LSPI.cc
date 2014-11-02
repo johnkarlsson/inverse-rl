@@ -149,7 +149,6 @@ vector<double> LSPI::lstdq(vector<Demonstration> const & D, Policy& pi,
         }
     }
 
-    //cout << "~lstdq()" << endl;
     return solve(k, n, phi, td, b);
 }
 

@@ -64,10 +64,6 @@ BMT::BMT( FeatureMDP _mdp,
          << "                                                             "
          << "\r";
 
-    // for (auto v : policyRewardLoss)
-    //     for (auto loss : v)
-    //         sortedLosses.insert(loss);
-
     for (auto v : policyRewardLoss)
         for (auto loss : v)
             sortedLosses.push_back(loss);
@@ -102,8 +98,6 @@ double BMT::loss(vector<double> const & wEval,
                  bool calculateSum)
 {
     double sup = -DBL_MAX;
-    // TODO: Do this for all state action pairs in a demonstration instead?
-    // Probably not though
     double sum = 0;
     for (int s : states)
     {
@@ -113,16 +107,20 @@ double BMT::loss(vector<double> const & wEval,
         for (auto a : validActions) // V(s) = max_a Q(s,a)
         {
             vector<double> phi = cmp.features(s,a);
-            double vOpt_tmp = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
-            double vEval_tmp = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
+            double vOpt_tmp = inner_product(phi.begin(), phi.end(),
+                                            wOpt.begin(), 0.0);
+            double vEval_tmp = inner_product(phi.begin(), phi.end(),
+                                             wEval.begin(), 0.0);
             if (vOpt < vOpt_tmp)
                 vOpt = vOpt_tmp;
             if (vEval < vEval_tmp)
                 vEval = vEval_tmp;
         }
-        // vector<double> phi = cmp.features(s);
-        // double vOpt = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
-        // double vEval = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
+        /*
+        vector<double> phi = cmp.features(s);
+        double vOpt = inner_product(phi.begin(), phi.end(), wEval.begin(), 0.0);
+        double vEval = inner_product(phi.begin(), phi.end(), wOpt.begin(), 0.0);
+        */
 
         // double diff = fabs(vOpt - vEval);
         double diff = vOpt - vEval;
@@ -147,8 +145,8 @@ double BMT::getLoss(int policy, int rewardFunction)
 double BMT::beta(double ep_lower, double ep_upper)
 {
     // const static double c = 0.1;
-    //return (gsl_cdf_gamma_P(ep_upper, c, 0.1)
-    //        - gsl_cdf_gamma_P(ep_lower, c, 0.1));
+    // return (gsl_cdf_gamma_P(ep_upper, c, 0.1)
+    //         - gsl_cdf_gamma_P(ep_lower, c, 0.1));
     return (exp(-c*ep_lower) - exp(-c*ep_upper));
 }
 
@@ -208,11 +206,6 @@ vector<double> BMT::solve_rect(vector<double> A, vector<double> b)
 
     return output;
 }
-
-// double BMT::optimalPolicyLoss()
-// {
-//     Policy& pi = optimalPolicy();
-// }
 
 DeterministicPolicy BMT::optimalPolicy()
 {

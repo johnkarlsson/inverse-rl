@@ -55,58 +55,9 @@ std::set<action> TicTacToeTransitionKernel::getValidActions(const state s) const
     return output;
 }
 
-/*
-int TicTacToeTransitionKernel::pointValue(int s, int p) const
-{
-    int v;
-    for (int a = 8; a >= p; --a) // Stop at p
-    {
-        v = 0;
-        int av = pow(3,a);
-        while (s >= av)
-        {
-            ++v;
-            s -= av;
-        }
-        // At this point, pointValue(s,a) == v
-    }
-    return v;
-}
-*/
-
-/*
-int TicTacToeTransitionKernel::player(int s) const
-{
-    int nOccupied = 0;
-    int v;
-    for (int a = size*size-1; a >= 0; --a)
-    {
-        v = 0;
-        int av = pow(3,a);
-        while (s >= av)
-        {
-            ++v;
-            s -= av;
-        }
-        // At this point, pointValue(s,a) == v
-        if (v != 0)
-            ++nOccupied;
-    }
-
-    return ((nOccupied % 2 == 0) ? 1 : 2);
-}
-*/
-
 std::vector< std::pair<state, probability> >
     TicTacToeTransitionKernel::getTransitionProbabilities(const int s,
                                                           const int a) const
-/*
-{
-    int value = player(s);
-    int s2 = s + value * pow(3,a);
-    return {{s2, 1}};
-}
-*/
 {
     int value = player(s, size);
     // int s2 = s + value * pow(3,a);
@@ -148,15 +99,6 @@ std::vector< std::pair<state, probability> >
     return output;
 }
 
-
-
-
-
-
-
-
-
-
 double TicTacToeTransitionKernel::getTransitionProbability(const int s,
                                                            const int a,
                                                            const int s2) const
@@ -169,4 +111,3 @@ TicTacToeTransitionKernel::TicTacToeTransitionKernel(int _size)
     : TransitionKernel(pow(3,_size*_size), _size*_size),
       size(_size)
 {}
-

@@ -20,8 +20,6 @@ class TicTacToeTransitionKernel
             getTransitionProbabilities(const int s, const int a) const;
 
         const int size;
-        // int pointValue(int s, int p) const;
-        // int player(int s) const;
         static int pointValue(int s, int p);
         static int pointValue(int s, int i, int j, int size);
         static int successor(int state, int point, int player);
