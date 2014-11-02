@@ -14,7 +14,6 @@
 #include "model/random_mdp/RandomMDP.h"
 #include "model/DirichletPolicyPosterior.h"
 #include "model/Policy.h"
-#include "datageneration/RandomTTTData.h"
 #include "algorithm/LSTDQ.h"
 #include "algorithm/BMT.h"
 #include "algorithm/ValueIteration.h"
@@ -38,7 +37,6 @@ void test_tictactoecmp();
 void test_tictactoetransitionkernel();
 void test_lstdq_optpolicy();
 void play_optimalTTTpolicy();
-void test_randomPolicy();
 void test_tictactoecmp_print(TicTacToeCMP& tttCmp);
 std::pair<double,double> optimal_vs_random();
 void compare_vi_qi(int cmp_size=10, double epsilon=0.001);
@@ -114,7 +112,6 @@ int main(int argc, const char *argv[])
     test_tictactoecmp();
     test_lstdq();
     test_lstdq_optpolicy();
-    test_randomPolicy();
     play_optimalTTTpolicy();
     // compare_vi_qi(30, 10);
     return 0;
@@ -2144,11 +2141,6 @@ std::pair<double, double> optimal_vs_random()
     }
 
     return std::pair<double,double> ( ((double) p1wins) / i , ((double) p2wins) / i );
-}
-
-void test_randomPolicy()
-{
-    RandomTTTData::fun();
 }
 
 void play_optimalTTTpolicy()
